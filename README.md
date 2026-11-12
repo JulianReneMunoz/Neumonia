@@ -251,6 +251,13 @@ Documentos de soporte: [Model Card](docs/model_card.md) · [Dataset](docs/datase
 por subgrupo en MLflow (ver Model Card). Hallazgo de Grad-CAM: en un DICOM pediátrico AP el modelo atiende al marcador de
 lateralidad y a los bordes (posible aprendizaje por atajos).
 
-## Créditos
-Modelo y aplicación original: Isabella Torres Revelo y Nicolás Díaz Salazar (UAO-Neumonía). Arquitectura basada en
-Pasa et al. (2019). Dataset RSNA: Shih et al. (2019). Desarrollo asistido por Claude Code (ver declaración de uso de IA).
+## Autoría y créditos
+**Esta versión** —arquitectura MVC, API REST y gRPC, interfaz clínica en Streamlit, pruebas, MLflow, Docker,
+CI/CD y documentación— fue desarrollada por el equipo del proyecto en el curso Gestión de Proyectos en IA y
+Ciencia de Datos, con asistencia de Claude Code (ver `docs/declaracion_uso_ia.md`).
+
+**Componentes de terceros que esta versión reutiliza** (su cita es obligatoria):
+- Modelo preentrenado `conv_MLP_84.h5`: caso base del curso, del proyecto original de I. Torres Revelo y N. Díaz Salazar. Uso académico.
+- Arquitectura de la red: Pasa et al. (2019), *Scientific Reports* 9:6268.
+- Dataset RSNA Pneumonia Detection Challenge: Shih et al. (2019), *Radiology: AI*; Radiological Society of North America.
+- Imágenes de muestra: Kermany et al. (2018), Mendeley Data, CC BY 4.0.
