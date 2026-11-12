@@ -1,0 +1,17 @@
+# Lo que graphify NO debe indexar (además de .gitignore)
+.venv/
+data/
+artifacts/
+runtime/
+mlruns/
+mlflow.db
+graphify-out/
+.engram/
+docs/img/
+src/neumonia/grpc_api/neumonia_pb2*.py
+*.h5
+*.zip
+*.dcm
+*.jpeg
+*.png
+.claude/skills/graphify/

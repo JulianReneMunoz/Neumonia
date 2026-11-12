@@ -1,0 +1,5 @@
+{
+  "label": "NORMAL",
+  "probability": 0.97,
+  "gradcam_url": "/static/gradcam/gradcam.png"
+}

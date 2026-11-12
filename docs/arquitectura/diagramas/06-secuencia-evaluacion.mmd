@@ -1,0 +1,23 @@
+%% Vista dinámica — evaluación CRISP-DM con MLflow
+sequenceDiagram
+  autonumber
+  actor E as Ingeniero ML
+  participant F as fetch_dataset.py
+  participant DS as data/dataset.py
+  participant EV as evaluation.evaluate
+  participant S as PneumoniaService
+  participant T as MlflowTracker («Tracker»)
+  E->>F: make dataset-rsna (Kaggle)
+  F->>DS: load_rsna → leer cabeceras DICOM (sin píxeles)
+  DS->>DS: stratified_subset(n, seed=42)
+  DS-->>E: rsna_metadata.csv + summary.json (datasheet)
+  E->>EV: make evaluate / scripts/evaluate.py
+  EV->>T: run("evaluate") · log_params(umbral, n, modelo)
+  loop cada imagen
+    EV->>S: predict_image(explain = primeras 4)
+    S-->>EV: Prediction
+  end
+  EV->>EV: binary_metrics + AUC Mann-Whitney
+  EV->>EV: subgroup_metrics(sexo, edad, proyección)
+  EV->>T: log_metrics(recall__sex__F, ...) · artefactos
+  T-->>E: run_id → Model Card

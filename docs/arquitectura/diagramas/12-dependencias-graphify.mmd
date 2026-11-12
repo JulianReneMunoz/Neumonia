@@ -1,0 +1,33 @@
+%% Dependencias reales entre capas medidas por graphify (graph.json, AST)
+%% Número = aristas entre nodos de cada capa. Ausencia de flecha = 0 aristas.
+flowchart TB
+  V["Vista<br/>view/"]
+  API["API REST<br/>api/"]
+  G["gRPC<br/>grpc_api/"]
+  C["Controlador<br/>controller/"]
+  M["Modelo<br/>model/"]
+  D["Dominio<br/>domain.py"]
+  CF["Config<br/>config.py"]
+  DA["Datos + evaluación<br/>data/ · evaluation.py"]
+  T["Tracking<br/>tracking/"]
+  V -- 7 --> C
+  API -- 9 --> C
+  G -- 11 --> C
+  C -- 35 --> M
+  C -- 24 --> D
+  M -- 10 --> D
+  V -- 5 --> D
+  DA -- 8 --> M
+  DA -- 7 --> C
+  DA -- 7 --> T
+  API -- "4 (solo InvalidImageError)" --> M
+  G -- "3 (solo InvalidImageError)" --> M
+  C -- 12 --> CF
+  API -- 5 --> CF
+  G -- 7 --> CF
+  V -- 2 --> CF
+  M -- 3 --> CF
+  V -. "0 ✔ prohibido" .-x M
+  M -. "0 ✔ prohibido" .-x C
+  classDef ok fill:#e6ffed,stroke:#2da44e;
+  class V,C,M ok;

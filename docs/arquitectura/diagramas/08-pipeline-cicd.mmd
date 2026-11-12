@@ -1,0 +1,17 @@
+%% Pipeline CI/CD con compuertas de calidad
+flowchart LR
+  pc["pre-commit<br/>ruff · secretos · archivos grandes · uv.lock"] --> push["git push / MR"]
+  push --> l["① ruff<br/>lint + formato"]
+  l -->|ok| t["② pytest<br/>309 pruebas · cobertura ≥ 80 %<br/>+ smoke_infer.py"]
+  t -->|ok| b["③ docker build<br/>+ container_smoke.py<br/>/health · /predict · 422"]
+  b -->|ok| s["④ Trivy<br/>CVE críticas"]
+  s -->|ok| g{"⑤ Aprobación<br/>humana"}
+  g -->|aprobado| d["⑥ deploy Droplet"]
+  d --> v["⑦ smoke en producción"]
+  l -->|falla| x(["⛔ detiene"])
+  t -->|falla| x
+  b -->|falla| x
+  s -->|falla| x
+  v -->|falla| rb["↩ reversión<br/>IMAGE_TAG anterior"]
+  classDef gate fill:#e8f4fd,stroke:#1f6feb;
+  class l,t,b,s,v gate;

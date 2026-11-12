@@ -1,0 +1,54 @@
+# --- Pesos y artefactos binarios (no se versionan: make model) ---
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.joblib
+*.safetensors
+*.part
+
+# --- Datos (descarga con make dataset-*) ---
+data/raw/
+data/processed/
+!data/processed/.gitkeep
+
+# --- Ejecución ---
+runtime/
+mlruns/
+mlflow.db
+mlartifacts/
+historial.csv
+Reporte*.pdf
+reporte_*.pdf
+
+# --- Secretos ---
+.env
+*.pem
+kaggle.json
+
+# --- Python / herramientas ---
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# --- Editores / SO ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+.claude/settings.local.json
+
+# --- graphify (se versiona el grafo, no la caché) ---
+graphify-out/cache/

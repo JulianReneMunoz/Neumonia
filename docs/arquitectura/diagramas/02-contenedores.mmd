@@ -1,0 +1,22 @@
+%% C4 Nivel 2 — Contenedores (docker-compose.yml)
+flowchart LR
+  user["👩‍⚕️ Usuario<br/>navegador"]
+  client["🖥️ Cliente interno"]
+  subgraph host["Droplet / máquina local (Docker, solo CPU)"]
+    ui["<b>ui</b> · Streamlit :8501<br/>view/streamlit_app.py<br/>HttpGateway"]
+    api["<b>api</b> · FastAPI :8000<br/>api/app.py<br/>healthcheck /health"]
+    grpc["<b>grpc</b> · :50051<br/>grpc_api/server.py"]
+    core["Núcleo compartido<br/>controller + model<br/>TensorFlow CPU · conv_MLP_84.h5"]
+    static[("runtime/static/gradcam/*.png")]
+    hist[("runtime/historial.csv")]
+    mlf["<b>mlflow</b> :5000<br/>perfil mlops<br/>SQLite + artifacts"]
+  end
+  user -->|HTTPS| ui
+  ui -->|"POST /predict<br/>GET gradcam_url"| api
+  client -->|REST| api
+  client -->|gRPC/HTTP2| grpc
+  api --> core
+  grpc --> core
+  api --> static
+  ui --> hist
+  core -. "scripts/evaluate.py" .-> mlf

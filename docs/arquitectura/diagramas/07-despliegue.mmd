@@ -1,0 +1,25 @@
+%% Vista de despliegue — producción (M4)
+flowchart LR
+  dev["💻 Desarrollador<br/>C:\Neumonia<br/>Claude Code + uv"]
+  subgraph gl["GitLab"]
+    repo[("Repositorio<br/>main · develop · feature/*")]
+    ci["Runners CI/CD"]
+    reg[("Container Registry<br/>neumonia:&lt;sha&gt;")]
+    vars["Variables protegidas<br/>DROPLET_HOST · SSH_PRIVATE_KEY"]
+  end
+  subgraph do["DigitalOcean Droplet · Ubuntu 24.04 · 2 vCPU / 4 GB"]
+    dk["Docker Engine"]
+    capi["api :8000<br/>usuario no root<br/>HEALTHCHECK"]
+    cui["ui :8501"]
+    fw["ufw: 22, 8000, 8501"]
+    mon["Monitoreo DO<br/>CPU/RAM + uptime /health"]
+  end
+  dev -- "git push / MR" --> repo
+  repo --> ci
+  ci -- "docker push" --> reg
+  vars -. inyecta .-> ci
+  ci -- "SSH (manual)<br/>docker compose pull/up" --> dk
+  reg -- pull --> dk
+  dk --> capi & cui
+  cui --> capi
+  mon -.-> capi

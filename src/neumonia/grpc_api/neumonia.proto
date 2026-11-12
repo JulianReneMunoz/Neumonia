@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package neumonia.v1;
+
+// Servicio gRPC equivalente a POST /predict (Clase 7). Útil para clientes internos
+// de baja latencia: el mapa Grad-CAM viaja como bytes PNG en la misma respuesta.
+service PneumoniaDetector {
+  rpc Predict (PredictRequest) returns (PredictReply);
+  rpc Health (HealthRequest) returns (HealthReply);
+}
+
+message PredictRequest {
+  bytes image = 1;
+  string filename = 2;
+}
+
+message PredictReply {
+  string label = 1;
+  double probability = 2;
+  string subtype = 3;
+  map<string, double> class_probabilities = 4;
+  bytes gradcam_png = 5;
+  string model_version = 6;
+}
+
+message HealthRequest {}
+
+message HealthReply {
+  string status = 1;
+  string model_version = 2;
+}

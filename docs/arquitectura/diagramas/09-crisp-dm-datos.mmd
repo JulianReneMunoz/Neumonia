@@ -1,0 +1,13 @@
+%% CRISP-DM aplicado — del negocio al despliegue (con MLOps)
+flowchart LR
+  n["1 · Negocio<br/>Data Thinking · BMC · OKR<br/>docs/M2_propuesta.md"]
+  c["2 · Comprensión de datos<br/>RSNA + Kermany + aula<br/>docs/dataset.md · summary.json"]
+  p["3 · Preparación<br/>readers · metadata (DAMA)<br/>preprocessing CLAHE"]
+  m["4 · Modelado<br/>conv_MLP_84 reutilizado<br/>SHA-256 · ADR-0002"]
+  e["5 · Evaluación<br/>métricas + subgrupos<br/>MLflow · Model Card"]
+  d["6 · Despliegue<br/>FastAPI · gRPC · Streamlit<br/>Docker · GitLab CI/CD"]
+  o["MLOps · operación<br/>monitoreo · deriva · reversión<br/>post-mortem"]
+  n --> c --> p --> m --> e --> d --> o
+  e -. "no cumple KR" .-> n
+  o -. "deriva de datos" .-> c
+  c -. "calidad/licencias" .-> n

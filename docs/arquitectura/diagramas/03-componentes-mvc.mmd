@@ -1,0 +1,61 @@
+%% C4 Nivel 3 — Componentes (MVC + Estrategia + DIP)
+flowchart TB
+  subgraph V["VISTA  ·  view/"]
+    st["streamlit_app.py<br/>(solo widgets)"]
+    pr["presenter.py<br/>Humble Object"]
+  end
+  subgraph AD["ADAPTADORES DE ENTREGA"]
+    api["api/app.py · FastAPI<br/>schemas.py (Pydantic)"]
+    grpc["grpc_api/server.py<br/>neumonia.proto"]
+  end
+  subgraph C["CONTROLADOR  ·  controller/"]
+    gw{{"PredictionGateway<br/>«Estrategia»"}}
+    lg["LocalGateway"]
+    hg["HttpGateway"]
+    svc["PneumoniaService<br/>leer → preprocesar → predecir → explicar"]
+    dp{{"DecisionPolicy<br/>«Estrategia»"}}
+    tp["ThresholdPolicy<br/>P(bact)+P(viral) ≥ umbral"]
+    fac["factory.py<br/>raíz de composición"]
+    rep["report.py<br/>PDF fpdf2 + historial CSV"]
+  end
+  subgraph M["MODELO  ·  model/"]
+    rd{{"ImageReader «Estrategia»"}}
+    dcm["DicomReader"]
+    ras["RasterReader"]
+    meta["metadata.py<br/>lista blanca (sin PHI)"]
+    pre["preprocessing.py<br/>512 · gris · CLAHE · /255"]
+    cl{{"Classifier «DIP»"}}
+    kc["KerasClassifier<br/>conv_MLP_84.h5"]
+    ex{{"Explainer «DIP»"}}
+    gc["GradCamExplainer<br/>tf.GradientTape · conv10_thisone"]
+  end
+  subgraph D["DOMINIO · domain.py"]
+    dom["RadiographImage · Prediction · Label"]
+  end
+
+  st --> pr
+  st --> gw
+  gw -.implementa.- lg
+  gw -.implementa.- hg
+  hg -->|HTTP| api
+  lg --> svc
+  api --> svc
+  grpc --> svc
+  st --> rep
+  svc --> rd
+  rd -.- dcm & ras
+  dcm --> meta
+  svc --> pre
+  svc --> cl
+  cl -.- kc
+  svc --> ex
+  ex -.- gc
+  svc --> dp
+  dp -.- tp
+  fac -. crea .-> svc
+  fac -. crea .-> kc
+  fac -. crea .-> gc
+  svc --> dom
+
+  classDef proto fill:#fff3cd,stroke:#b58900;
+  class gw,dp,rd,cl,ex proto;

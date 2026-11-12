@@ -1,0 +1,66 @@
+%% Trazabilidad: metodología → elemento de arquitectura
+flowchart LR
+  subgraph G["Gestión y ciclo de vida"]
+    m1["CRISP-DM + MLOps"]
+    m2["Data Thinking"]
+    m3["DAMA-DMBOK"]
+    m4["Kanban"]
+    m5["BMC + OKR/KPI"]
+    m6["Riesgos + EU AI Act"]
+  end
+  subgraph I["Ingeniería de software"]
+    m7["MVC"]
+    m8["Estrategia + DIP"]
+    m9["Humble Object"]
+    m10["Contract-first"]
+    m11["Pirámide de pruebas AAA"]
+    m12["uv + 12-factor + Docker"]
+    m13["Gitflow + SemVer"]
+    m14["CI/CD + DevSecOps"]
+  end
+  subgraph ML["Datos, modelo y MLOps"]
+    m15["Modelo preentrenado"]
+    m16["Paridad train/serve"]
+    m17["Análisis de decisión"]
+    m18["Grad-CAM"]
+    m19["Evaluación por subgrupos"]
+    m20["MLflow"]
+    m21["Model Card + Datasheet"]
+    m22["Privacidad desde el diseño"]
+  end
+  subgraph AG["Agentes"]
+    m23["Spec-driven + Claude Code<br/>graphify · engram"]
+  end
+  subgraph A["Arquitectura"]
+    vista["Vista<br/>streamlit_app · presenter"]
+    ctrl["Controlador<br/>service · decision · factory · gateways"]
+    mod["Modelo<br/>readers · preprocessing · classifier · gradcam · metadata"]
+    adp["Adaptadores<br/>FastAPI · gRPC"]
+    dat["Datos<br/>dataset · evaluation · tracking"]
+    inf["Infraestructura<br/>Docker · Compose · CI/CD · Droplet"]
+    doc["Documentación<br/>M2 · ADR · Model Card · specs"]
+    kit["Kit agéntico<br/>CLAUDE.md · skills · hooks · .engram · graphify-out"]
+  end
+  m1 --> dat & inf & doc
+  m2 --> doc & vista
+  m3 --> dat & mod
+  m4 --> doc
+  m5 --> doc
+  m6 --> doc & inf
+  m7 --> vista & ctrl & mod
+  m8 --> ctrl & mod
+  m9 --> vista
+  m10 --> adp
+  m11 --> ctrl & kit
+  m12 --> inf
+  m13 --> inf & kit
+  m14 --> inf
+  m15 --> mod
+  m16 --> mod
+  m17 --> ctrl
+  m18 --> mod & vista
+  m19 --> dat
+  m20 --> dat
+  m21 --> doc
+  m22 --> mod & adp
+  m23 --> kit

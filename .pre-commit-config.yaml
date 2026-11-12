@@ -1,0 +1,32 @@
+# uv run pre-commit install   (o make hooks). Corre en cada commit, antes de que llegue a CI.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-added-large-files   # bloquea pesos (*.h5 118 MB) por error
+        args: [--maxkb=5000]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.5.14
+    hooks:
+      - id: uv-lock          # uv.lock siempre sincronizado con pyproject.toml
+  - repo: local
+    hooks:
+      - id: pytest-fast
+        name: pytest (rápidas)
+        entry: uv run pytest -q -m "not model and not slow" -x
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

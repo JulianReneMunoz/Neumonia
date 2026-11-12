@@ -1,0 +1,76 @@
+%% Vista de código — dominio y abstracciones (Protocol)
+classDiagram
+  direction LR
+  class Label {
+    <<enumeration>>
+    NORMAL
+    PNEUMONIA
+  }
+  class RadiographImage {
+    +pixels: ndarray uint8 HxWx3
+    +source_format: str
+    +metadata: dict
+  }
+  class Prediction {
+    +label: Label
+    +probability: float
+    +subtype: str
+    +class_probabilities: dict
+    +heatmap: ndarray
+    +metadata: dict
+    +to_contract(gradcam_url, model_version) dict
+  }
+  class ImageReader {
+    <<Protocol>>
+    +extensions
+    +can_read(data) bool
+    +read(data) RadiographImage
+  }
+  class Classifier {
+    <<Protocol>>
+    +class_names
+    +predict_proba(batch) ndarray
+  }
+  class Explainer {
+    <<Protocol>>
+    +explain(batch, class_index) ndarray
+  }
+  class DecisionPolicy {
+    <<Protocol>>
+    +decide(probs) Decision
+  }
+  class PredictionGateway {
+    <<Protocol>>
+    +predict(data, filename) GatewayResult
+  }
+  class Tracker {
+    <<Protocol>>
+    +run(name)
+    +log_params()
+    +log_metrics()
+    +log_artifact()
+  }
+  class PneumoniaService {
+    +classifier: Classifier
+    +policy: DecisionPolicy
+    +readers: tuple~ImageReader~
+    +predict_image(image, explain) Prediction
+    +predict_bytes(data, filename) Prediction
+  }
+  ImageReader <|.. DicomReader
+  ImageReader <|.. RasterReader
+  Classifier <|.. KerasClassifier
+  Classifier <|.. FakeClassifier : pruebas
+  Explainer <|.. GradCamExplainer
+  DecisionPolicy <|.. ThresholdPolicy
+  PredictionGateway <|.. LocalGateway
+  PredictionGateway <|.. HttpGateway
+  Tracker <|.. MlflowTracker
+  Tracker <|.. NullTracker
+  PneumoniaService o-- Classifier
+  PneumoniaService o-- Explainer
+  PneumoniaService o-- DecisionPolicy
+  PneumoniaService o-- ImageReader
+  PneumoniaService ..> Prediction : crea
+  Prediction --> Label
+  LocalGateway --> PneumoniaService

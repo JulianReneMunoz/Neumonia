@@ -1,0 +1,114 @@
+openapi: 3.0.3
+info:
+  title: Neumonía — Inference API
+  version: 0.3.0
+  description: |
+    Contrato de inferencia del caso Neumonía (Keras/TF + Grad-CAM).
+    Las claves `label`, `probability` y `gradcam_url` son el contrato mínimo del curso y no cambian
+    aunque cambie el modelo; las demás son aditivas (compatibilidad hacia atrás).
+    Uso académico: no es un dispositivo médico.
+servers:
+  - url: http://localhost:8000
+paths:
+  /health:
+    get:
+      summary: Estado del servicio (healthcheck de Docker y del despliegue)
+      responses:
+        '200':
+          description: Servicio vivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /predict:
+    post:
+      summary: Clasifica una radiografía de tórax y genera su mapa Grad-CAM
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: DICOM (.dcm), JPG o PNG. Máximo 20 MB.
+      responses:
+        '200':
+          description: Resultado de la inferencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+              example:
+                label: PNEUMONIA
+                probability: 0.9921
+                gradcam_url: /static/gradcam/3f2b9c0e8a.png
+                subtype: viral
+                class_probabilities: {bacteriana: 0.1039, normal: 0.0079, viral: 0.8882}
+                metadata: {age: 6, sex: F, view_position: AP, modality: CR}
+                model_version: conv_MLP_84@modelo-v1
+                request_id: 3f2b9c0e8a
+        '422':
+          description: Entrada inválida (vacía, corrupta, formato no soportado o demasiado grande)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        loc: {type: array, items: {type: string}}
+                        msg: {type: string}
+        '500':
+          description: Error del modelo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /static/gradcam/{id}.png:
+    get:
+      summary: Imagen PNG con el mapa Grad-CAM superpuesto (512×512)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: PNG
+          content:
+            image/png: {}
+components:
+  schemas:
+    Health:
+      type: object
+      required: [status, model_loaded, model_version]
+      properties:
+        status: {type: string, enum: [ok]}
+        model_loaded: {type: boolean}
+        model_version: {type: string}
+    Prediction:
+      type: object
+      required: [label, probability, gradcam_url, subtype, class_probabilities, model_version, request_id]
+      properties:
+        label: {type: string, enum: [NORMAL, PNEUMONIA]}
+        probability: {type: number, minimum: 0, maximum: 1, description: Probabilidad de la etiqueta devuelta}
+        gradcam_url: {type: string, nullable: true}
+        subtype: {type: string, enum: [bacteriana, normal, viral]}
+        class_probabilities:
+          type: object
+          additionalProperties: {type: number}
+        metadata:
+          type: object
+          description: Metadatos DICOM no identificables (edad, sexo, proyección, modalidad...)
+          additionalProperties: true
+        model_version: {type: string}
+        request_id: {type: string}
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: {type: string}

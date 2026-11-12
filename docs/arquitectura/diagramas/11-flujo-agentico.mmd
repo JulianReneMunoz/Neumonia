@@ -1,0 +1,22 @@
+%% Flujo de desarrollo con consola agéntica (Claude Code + graphify + engram)
+flowchart TB
+  dev["👤 Desarrollador<br/>PowerShell · C:\Neumonia · claude"]
+  subgraph CC["Claude Code"]
+    mem["CLAUDE.md / AGENTS.md<br/>reglas y comandos"]
+    sk["Skills (10)<br/>mvc-feature · pytest-aaa · api-contract · dataset-rsna<br/>mlflow-evaluacion · gradcam-review · gitflow-pr<br/>docker-deploy · entregables-curso · graphify"]
+    ag["Subagentes<br/>revisor-arquitectura · escritor-pruebas"]
+    hk["Hooks<br/>guard_bash (bloquea pip/pesos/secretos)<br/>format_python (ruff)<br/>graphify hook-guard"]
+  end
+  gr[("graphify-out/<br/>graph.json · graph.html · GRAPH_REPORT.md<br/>«mapa del código»")]
+  en[("Engram · proyecto neumonia<br/>.engram/chunks (Git)<br/>«memoria de decisiones»")]
+  sp["specs/ → criterios de aceptación"]
+  code["src/ + tests/"]
+  gate["make check<br/>ruff + 309 pruebas + arquitectura"]
+  pr["PR + revisión humana"]
+  dev --> CC
+  CC -- "graphify query / explain" --> gr
+  CC -- "mem_search / mem_save (MCP)" --> en
+  sp --> CC
+  CC --> code --> gate --> pr
+  code -. "make grafo (AST, sin LLM)" .-> gr
+  pr -. "make memoria" .-> en

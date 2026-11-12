@@ -1,0 +1,84 @@
+[project]
+name = "neumonia"
+version = "0.3.0"
+description = "Apoyo al diagnóstico de neumonía en radiografías de tórax (Keras/TF + Grad-CAM) — caso base GPIA UAO 2026-2S"
+readme = "README.md"
+requires-python = "==3.13.*"
+license = { text = "Uso académico" }
+authors = [{ name = "Equipo Neumonía — GPIA UAO 2026-2S" }]
+dependencies = [
+    "tensorflow>=2.21.0",
+    "numpy>=2.1",
+    "opencv-python-headless>=4.10",
+    "pillow>=11.0",
+    "pydicom>=3.0.1",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "python-multipart>=0.0.20",
+    "pydantic>=2.9",
+    "httpx>=0.28",
+    "streamlit>=1.40",
+    "fpdf2>=2.8",
+    "grpcio>=1.68",
+    "protobuf>=5.28",
+]
+
+[project.scripts]
+neumonia-api = "neumonia.api.app:run"
+neumonia-grpc = "neumonia.grpc_api.server:serve"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "ruff>=0.8",
+    "grpcio-tools>=1.68",
+    "pre-commit>=4.0",
+    "graphifyy>=0.9.107",
+]
+mlops = [
+    "mlflow>=2.18",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[build-system]
+requires = ["uv_build>=0.8,<0.20"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
+markers = [
+    "model: requiere el modelo real conv_MLP_84.h5 (se omite si no está descargado)",
+    "slow: prueba lenta (> 2 s)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning:keras.*",
+    "ignore::FutureWarning",
+]
+
+[tool.coverage.run]
+source = ["src/neumonia"]
+omit = ["src/neumonia/grpc_api/neumonia_pb2*.py", "src/neumonia/view/streamlit_app.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["src/neumonia/grpc_api/neumonia_pb2*.py", "graphify-out", ".engram", ".claude/skills/graphify"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "N", "S", "PT", "RUF"]
+ignore = ["S101", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "N802", "N806"]
+"scripts/**" = ["S603", "S607"]
+"scripts/engram_memoria.py" = ["E501"]  # textos de memoria: datos, no lógica

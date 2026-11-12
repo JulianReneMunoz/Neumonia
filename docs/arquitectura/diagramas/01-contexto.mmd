@@ -1,0 +1,18 @@
+%% C4 Nivel 1 — Contexto del sistema
+flowchart TB
+  medico["👩‍⚕️ Médico general<br/><i>Carga la radiografía y decide</i>"]
+  integrador["🖥️ Sistema clínico / PACS<br/><i>Cliente REST o gRPC</i>"]
+  equipo["👥 Equipo de ML/Software<br/><i>Evalúa, versiona y despliega</i>"]
+  sistema(["🫁 Sistema Neumonía<br/>Clasifica NORMAL / PNEUMONIA<br/>con Grad-CAM y reporte PDF"])
+  release[("📦 GitHub Release modelo-v1<br/>conv_MLP_84.h5 + SHA-256")]
+  rsna[("🗂️ RSNA Pneumonia 2018 (Kaggle)<br/>DICOM + edad, sexo, proyección")]
+  mlflow[("📈 MLflow<br/>experimentos")]
+  gitlab["⚙️ GitLab CI/CD + Droplet"]
+
+  medico -- "radiografía DICOM/JPG/PNG<br/>→ resultado + mapa + PDF" --> sistema
+  integrador -- "POST /predict · gRPC Predict" --> sistema
+  sistema -- "descarga verificada" --> release
+  equipo -- "make dataset-rsna" --> rsna
+  equipo -- "make evaluate" --> mlflow
+  equipo -- "merge a main" --> gitlab
+  gitlab -- "despliega imagen CPU" --> sistema

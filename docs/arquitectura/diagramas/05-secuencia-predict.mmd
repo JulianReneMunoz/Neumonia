@@ -1,0 +1,33 @@
+%% Vista dinámica — POST /predict (contrato)
+sequenceDiagram
+  autonumber
+  actor U as Médico (Streamlit)
+  participant G as HttpGateway
+  participant A as FastAPI /predict
+  participant S as PneumoniaService
+  participant R as select_reader (Estrategia)
+  participant P as preprocess (CLAHE)
+  participant K as KerasClassifier
+  participant D as ThresholdPolicy
+  participant X as GradCamExplainer
+  U->>G: archivo .dcm/.jpg + documento
+  G->>A: multipart/form-data file
+  A->>A: vacío o > 20 MB → 422
+  A->>S: predict_bytes(data, filename)
+  S->>R: firma binaria (DICM / FFD8 / PNG) → lector
+  R-->>S: RadiographImage (uint8 + metadatos sin PHI)
+  Note over R,S: archivo corrupto → InvalidImageError → 422
+  S->>P: preprocess(pixels)
+  P-->>S: tensor (1,512,512,1)
+  S->>K: predict_proba
+  K-->>S: [P(bact), P(normal), P(viral)]
+  S->>D: decide(probs)
+  D-->>S: label, probability, subtype, target_index
+  S->>X: explain(batch, target_index)
+  X-->>S: mapa 31×31 → overlay JET 512×512
+  S-->>A: Prediction
+  A->>A: guarda PNG → gradcam_url
+  A-->>G: 200 {label, probability, gradcam_url, ...}
+  G->>A: GET gradcam_url
+  G-->>U: resultado + Grad-CAM + metadatos
+  U->>U: PDF (fpdf2) / historial CSV
