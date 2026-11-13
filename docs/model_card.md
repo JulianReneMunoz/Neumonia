@@ -38,9 +38,46 @@ Corrida de referencia: `make evaluate` (MLflow, experimento `neumonia-evaluacion
 | Conjunto | n | Exactitud | Sensibilidad | Especificidad | AUC | Nota |
 |---|---|---|---|---|---|---|
 | Aula (12 JPG Kermany + 4 DICOM RSNA) | 16 | 0.94 | 1.00 | 0.83 | 0.98 | **Inflada**: posible solapamiento con el entrenamiento; solo smoke |
-| RSNA subconjunto estratificado | 500 | _pendiente_ | _pendiente_ | _pendiente_ | _pendiente_ | Ejecutar `make dataset-rsna` + `scripts/evaluate.py --limit 500` y registrar el `run_id` |
+| RSNA subconjunto estratificado (12/11/2026) | 500 | 0.63 | 0.74 (IC 95 % 0.66–0.81) | 0.59 (IC 95 % 0.54–0.64) | 0.73 | 120 opacidad / 165 normal / 215 otra anormalidad; `run_id` `e38783032379417fa23eec3491788318` |
 
 Se reportan además, en MLflow, la sensibilidad por `sex`, `age_group` y `view_position`.
+
+### Clasificación en RSNA por subgrupo (corrida del 12/11/2026)
+500 radiografías de la exportación adjudicada de RSNA (semilla 42; 471 de adultos y 29 de menores de 18 años),
+umbral 0.5, sin cambios en el código. Positivo = `Lung Opacity`; negativo = `Normal` o
+`No Lung Opacity / Not Normal` (otra anormalidad sin neumonía), que se reportan también por separado.
+
+| Comparación | n | Sensibilidad | Especificidad (IC 95 %) | AUC |
+|---|---|---|---|---|
+| Opacidad vs. todo lo demás | 500 | 0.74 | 0.59 (0.54–0.64) | 0.73 |
+| Opacidad vs. Normal | 285 | 0.74 | 0.73 (0.66–0.80) | 0.82 |
+| Opacidad vs. otra anormalidad | 335 | 0.74 | 0.48 (0.41–0.55) | 0.66 |
+
+| Variable | Grupo | n | Sensibilidad | Especificidad | AUC |
+|---|---|---|---|---|---|
+| Sexo | F | 227 | 0.72 | 0.61 | 0.72 |
+| Sexo | M | 273 | 0.76 | 0.58 | 0.73 |
+| Edad | 0–17 | 29 | 0.92 | 0.44 | 0.82 |
+| Edad | 18–39 | 140 | 0.77 | 0.63 | 0.77 |
+| Edad | 40–64 | 265 | 0.66 | 0.59 | 0.67 |
+| Edad | 65+ | 66 | 0.81 | 0.56 | 0.75 |
+| Proyección | AP | 229 | 0.89 | 0.19 | 0.60 |
+| Proyección | PA | 271 | 0.30 | 0.82 | 0.61 |
+
+**Lectura.**
+1. **La proyección decide más que el pulmón.** En AP el modelo dice "neumonía" casi siempre (especificidad 0.19);
+   en PA casi nunca (sensibilidad 0.30). Dentro de cada proyección el AUC cae a ≈ 0.60, por debajo del global
+   (0.73): buena parte de la discriminación global viene de separar AP de PA, no de la lesión. En RSNA las placas
+   AP son portátiles, de pacientes más enfermos, y concentran los positivos. Es el aprendizaje por atajos (R-05)
+   que ya mostraban Grad-CAM (2.7 % de acierto del máximo) y la alerta de atajo (83 %).
+2. **Detecta "anormal", no "neumonía".** Contra radiografías normales el AUC es 0.82, pero contra otras
+   anormalidades baja a 0.66 y la especificidad a 0.48.
+3. **Sexo**: sin diferencia relevante (AUC 0.72 vs. 0.73). **Edad**: el peor grupo es 40–64 (AUC 0.67); el grupo
+   0–17 tiene solo 29 casos y no permite conclusiones.
+
+Con estas cifras el modelo no es apto para uso clínico en adultos; sirve como demostración educativa de cómo se
+detecta y documenta el riesgo. Cualquier modelo que lo reemplace debería reportar el AUC **por proyección** como
+criterio de aceptación.
 Latencia medida en CPU (2 vCPU): ≈ 0.5 s de inferencia + ≈ 0.5 s de Grad-CAM por imagen; carga inicial ≈ 1 s.
 
 ### ¿Grad-CAM apunta a la lesión? (ADR-0009, spec 007)
@@ -75,7 +112,8 @@ no debe presentarse como localización de la lesión.
 ## Consideraciones éticas y limitaciones
 1. **Cambio de dominio**: entrenado en niños de un solo hospital chino; el uso en adultos u otros equipos requiere
    validación local (riesgo R-02).
-2. **Sesgo potencial** por sexo, edad y proyección AP/PA (las AP concentran pacientes hospitalizados).
+2. **Sesgo medido por proyección**: en RSNA la especificidad es 0.19 en AP y la sensibilidad 0.30 en PA (ver
+   Métricas); por sexo no se observó diferencia relevante.
 3. **Calibración**: las probabilidades son puntajes softmax, no frecuencias; no interpretar 0.98 como "98 % de certeza".
 4. **Explicabilidad**: Grad-CAM muestra *dónde* miró la red, no *por qué* es correcta. Tiene baja resolución (31×31).
    El **informe de hallazgos por zonas** y las **vistas 3D** (v0.4.0, ADR-0007) resumen esa atención: no son una
@@ -90,7 +128,8 @@ no debe presentarse como localización de la lesión.
 6. **Supervisión humana**: toda salida va acompañada del aviso "no reemplaza el criterio de un profesional".
 
 ## Recomendaciones
-- Validar en RSNA y en datos locales antes de cualquier piloto; reportar métricas por subgrupo.
+- Validación en RSNA hecha (AUC 0.73, sesgo por proyección); falta validar en datos locales antes de cualquier
+  piloto y exigir AUC por proyección ≥ al global.
 - Recalibrar (Platt / *temperature scaling*) si se usa la probabilidad para priorizar.
 - Mitigar atajos: recortar la región pulmonar o reentrenar con *augmentations* que eliminen marcadores.
 - Considerar modelos multi-dataset (TorchXRayVision) como alternativa intercambiable vía `Classifier`.
