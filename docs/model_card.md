@@ -46,14 +46,23 @@ Latencia medida en CPU (2 vCPU): ≈ 0.5 s de inferencia + ≈ 0.5 s de Grad-CAM
 ### ¿Grad-CAM apunta a la lesión? (ADR-0009, spec 007)
 Contra las cajas de opacidad de los radiólogos de RSNA, en la geometría que ve el modelo (512×512).
 
-| Métrica | Todos los casos con cajas | Clasificados como neumonía | Línea base (azar) |
-|---|---|---|---|
-| Acierto del máximo (*pointing game*) | _pendiente_ (IC 95 %) | _pendiente_ | fracción del área en cajas |
-| Enriquecimiento (energía dentro / área) | _pendiente_ | _pendiente_ | 1.0 |
-| IoU región de alta atención vs. cajas | _pendiente_ | _pendiente_ | — |
-| Casos con alerta de atajo | _pendiente_ | _pendiente_ | — |
+Corrida del 12/11/2026: 300 radiografías de RSNA con opacidad marcada (exportación adjudicada, semilla 42),
+umbral 0.5, zonas geométricas. Registrada en MLflow (experimento de localización; `run_id`: _anotar_).
 
-Ejecutar `make evaluate-loc` (300 casos, semilla 42) y registrar el `run_id`.
+| Métrica | Todos los casos con cajas (n = 300) | Clasificados como neumonía (n = 215) | Línea base (azar) |
+|---|---|---|---|
+| Acierto del máximo (*pointing game*) | 2.7 % (IC 95 % 1.4–5.2 %) | 3.3 % (IC 95 % 1.6–6.6 %) | 11.7 % / 12.9 % (área en cajas) |
+| Enriquecimiento (energía dentro / área) | 0.73 | 0.73 | 1.0 |
+| IoU región de alta atención vs. cajas | 0.007 | 0.010 | — |
+| Casos con alerta de atajo | 83 % (IC 95 % 78–87 %) | 80 % | — |
+
+**Conclusión: en adultos (RSNA), Grad-CAM de `conv_MLP_84` no apunta a la lesión; lo hace peor que el azar.**
+La atención cae menos dentro de las cajas de los radiólogos de lo que caería al azar (enriquecimiento 0.73),
+y la alerta de atajo se activa en 83 % de los casos, lo que confirma que la alerta marca justo cuándo la
+explicación no es confiable. Causas probables: cambio de dominio (entrenado con radiografías pediátricas de
+Kermany) y aprendizaje por atajos (R-05). Además, el modelo clasificó como neumonía 215 de los 300 casos con
+opacidad (sensibilidad 71.7 %, IC 95 % 66.3–76.5 %) en este subconjunto. Con estas cifras, el mapa de calor
+no debe presentarse como localización de la lesión.
 
 ## Análisis cualitativo (Grad-CAM)
 - En la muestra bacteriana el mapa cubre los campos pulmonares (comportamiento esperado).
