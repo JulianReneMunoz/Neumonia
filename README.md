@@ -281,6 +281,39 @@ En este proyecto no se entrenó ningún modelo: se usan tres modelos preentrenad
 | PSPNet (TorchXRayVision) | Cohen et al. | Radiografías anotadas (ChestX-Det) | Dibuja la silueta de los pulmones en la radiografía (opcional) |
 | MEDPSeg (PyTorch) | Carmo et al. | Tomografías anotadas | Dibuja pulmones, lóbulos, vías y lesión en la tomografía |
 
+### Ficha técnica y papel de cada modelo en el proceso
+Ningún modelo hace solo todo el proceso. En la **radiografía**, `conv_MLP_84` detecta la infección y PSPNet ubica los
+pulmones; su 3D es una **representación** de dónde miró el modelo, porque una radiografía es plana. En la
+**tomografía**, MEDPSeg segmenta la lesión y el 3D sí es la **anatomía real** del paciente. La DenseNet-121 es una
+alternativa a `conv_MLP_84` en evaluación (ADR-0011).
+
+| | `conv_MLP_84` (modelo base) | DenseNet-121 RSNA | PSPNet | MEDPSeg |
+|---|---|---|---|---|
+| **Autores** | Torres Revelo y Díaz Salazar (arquitectura de Pasa et al.) | Cohen et al. (TorchXRayVision) | Cohen et al. (TorchXRayVision) | Carmo et al. |
+| **Origen** | Release `modelo-v1` del caso base | Pesos `densenet121-res224-rsna` | `chestx_det` PSPNet | `data_poly.zip` v4.0.0 |
+| **Framework** | Keras/TensorFlow | PyTorch | PyTorch | PyTorch |
+| **Datos de entrenamiento** | Radiografías pediátricas (Kermany) | Radiografías de adultos (RSNA, imágenes del NIH) | ChestX-Det | Tomografías anotadas |
+| **Tipo de imagen** | Radiografía | Radiografía | Radiografía | Tomografía |
+| **Entrada** | 512×512, gris, CLAHE, 0–1 | 224×224, gris, [-1024, 1024] | 512×512 | Tomografía remuestreada a 1,5 mm |
+| **Salida** | 3 probabilidades: bacteriana, normal, viral | Neumonía sí/no | 14 estructuras anatómicas | Pulmones, lóbulos, vía aérea, arterias, lesión |
+| **Paso del proceso** | 1. Detectar la infección | 1. Detectar la infección (alternativa) | 2. Ubicar los pulmones | 1 a 3: segmentar, medir y reconstruir |
+| **Determinación de la infección** | NEUMONÍA / NORMAL (umbral 0,5) y patrón bacteriano/viral **sugestivo, no validado** | Neumonía sí/no, sin patrón | No la determina: delimita los pulmones | Lesión segmentada (vidrio esmerilado y consolidación), % por pulmón y lóbulo, severidad 0–25 |
+| **Localización** | Grad-CAM 31×31: dónde miró el modelo, **no** dónde está la lesión | Grad-CAM 7×7 (sin medir aún) | 6 zonas con la silueta real → lateralidad, extensión y alerta de atajo | La lesión vóxel a vóxel, en su pulmón y su lóbulo |
+| **Vista 3D** | Relieve 3D de la atención y esquema de pulmones por zonas (**representación**) | La misma vista, con su Grad-CAM | Hace que el esquema por zonas siga la silueta real | **Reconstrucción 3D real** de pulmones, vía aérea, arterias y lesión |
+| **Validación** | AUC 0,73 en 500 radiografías de RSNA; sesgo AP/PA; Grad-CAM acierta el 2,7 % | Pendiente: `make evaluate-test` (3000 radiografías no vistas) | Control de calidad automático; aprobado en 4 de 5 muestras | Dice 0,78 frente a radiólogos (1 de 20 tomografías de COVID-19-CT-Seg) |
+| **Cómo se activa** | `make ui` (puerto 8501), siempre | `make ui-xrv` (rama `feature/clasificador-xrv`) | `make ui-seg` (opcional) | `make ui-ct` (puerto 8502, prototipo) |
+| **Tamaño** | ≈ 118 MB | 28 MB | 273 MB | 768 MB |
+| **SHA-256** | `d9548ff6…e18e` | `906a59f4…0268` | `019b167e…` | `b0890cd4…d659` |
+| **Licencia** | Uso académico | Apache-2.0 | Apache-2.0 (código) | MIT (código) |
+
+**El proceso completo, por tipo de imagen:**
+1. **Radiografía:** `conv_MLP_84` (o la DenseNet-121) detecta la infección → Grad-CAM marca dónde miró → PSPNet (o las
+   zonas geométricas) ubica los pulmones → el sistema cruza ambas cosas → informe por zonas, alerta de atajo y vista 3D
+   de la atención.
+2. **Tomografía:** MEDPSeg segmenta pulmones, lóbulos, vía aérea, arterias y lesión → el sistema mide el % comprometido
+   y la severidad → reconstrucción 3D real con la lesión.
+3. **Unión de los dos** en un informe por paciente: paso siguiente, aún no implementado.
+
 ### Flujo del sistema
 ```mermaid
 flowchart TD
