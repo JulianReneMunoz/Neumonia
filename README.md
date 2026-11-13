@@ -251,6 +251,103 @@ Documentos de soporte: [Model Card](docs/model_card.md) · [Dataset](docs/datase
 por subgrupo en MLflow (ver Model Card). Hallazgo de Grad-CAM: en un DICOM pediátrico AP el modelo atiende al marcador de
 lateralidad y a los bordes (posible aprendizaje por atajos).
 
+## Evaluación de los modelos (radiografía y tomografía)
+El sistema tiene dos partes, cada una con su propio modelo **preentrenado** (ninguno se entrenó en este proyecto).
+Cada uno se evaluó por separado contra lo que marcaron radiólogos, con datos que el modelo no había visto. No se
+combinan: en estos datasets ningún paciente tiene radiografía y tomografía a la vez.
+
+| | Radiografía (proyecto principal, `make ui`) | Tomografía (prototipo, `make ui-ct`) |
+|---|---|---|
+| **Qué se evalúa** | El modelo `conv_MLP_84` | El modelo MEDPSeg |
+| **Con qué datos** | RSNA: radiografías de adultos | COVID-19-CT-Seg: tomografías con COVID |
+| **Pregunta** | ¿Acierta si hay neumonía? ¿Mira donde está la lesión? | ¿Dibuja la lesión donde la marcaron los radiólogos? |
+| **Contra qué se compara** | Etiqueta de los radiólogos (opacidad sí/no) y sus cajas | Máscara de la lesión hecha por los radiólogos |
+| **Medida** | Sensibilidad, especificidad, AUC; *pointing game* | Dice (coincidencia de la lesión) |
+| **Resultado** | AUC 0,73 (500 casos); Grad-CAM acierta 2,7 % (300 casos); sesgo AP/PA | Dice 0,78 (1 caso) |
+| **Detalle** | `docs/model_card.md`, ADR-0009 | ADR-0010, `specs/008-prototipo-tomografia.md` |
+
+La evaluación de radiografía es la sólida (cientos de casos, con intervalos de confianza). La de tomografía es una
+primera validación con 1 de las 20 tomografías del dataset.
+
+Fuentes: RSNA Pneumonia Detection Challenge (Shih et al., 2019, *Radiology: AI*); COVID-19-CT-Seg (Ma et al., 2020,
+Zenodo 3757476, CC BY 4.0); MEDPSeg (Carmo et al., 2026, licencia MIT).
+
+## Modelos preentrenados y cómo se integran
+En este proyecto no se entrenó ningún modelo: se usan tres modelos preentrenados y se miden con datos que no vieron.
+
+| Modelo | Quién lo entrenó | Con qué datos | Qué hace aquí |
+|---|---|---|---|
+| `conv_MLP_84` (Keras) | Autores del proyecto original (Torres Revelo y Díaz Salazar), con la arquitectura de Pasa et al. | Radiografías de niños (Kermany) | Clasifica la radiografía: neumonía sí/no, bacteriana/viral |
+| PSPNet (TorchXRayVision) | Cohen et al. | Radiografías anotadas (ChestX-Det) | Dibuja la silueta de los pulmones en la radiografía (opcional) |
+| MEDPSeg (PyTorch) | Carmo et al. | Tomografías anotadas | Dibuja pulmones, lóbulos, vías y lesión en la tomografía |
+
+### Flujo del sistema
+```mermaid
+flowchart TD
+    subgraph RX["Radiografía · make ui / make ui-seg · puerto 8501"]
+        A["Radiografía<br/>DICOM, JPG o PNG"] --> B["Lectura y anonimización<br/>sin PatientID ni PatientName"]
+        B --> C["Preprocesamiento<br/>512×512 · gris · CLAHE · 0–1"]
+        C --> D["conv_MLP_84 · Keras<br/>3 probabilidades"]
+        D --> E["Política de decisión<br/>umbral 0,5 → NEUMONÍA / NORMAL + subtipo"]
+        D --> F["Grad-CAM<br/>mapa de atención 31×31"]
+        B --> G{"¿Segmentación pulmonar<br/>activada? (make ui-seg)"}
+        G -- sí --> H["PSPNet · TorchXRayVision<br/>silueta real de los pulmones"]
+        H --> Q{"¿Pasa el control<br/>de calidad?"}
+        Q -- sí --> Z["Zonas con la silueta real"]
+        Q -- no --> ZG["Zonas geométricas<br/>+ nota en el informe"]
+        G -- no --> ZG
+        F --> X["Cruce atención × zonas<br/>lateralidad · extensión · alerta de atajo"]
+        Z --> X
+        ZG --> X
+        E --> R["Informe detallado<br/>app · PDF · API"]
+        X --> R
+    end
+    subgraph CT["Tomografía · make ui-ct · puerto 8502 · prototipo"]
+        T["Tomografía<br/>NIfTI"] --> M["MEDPSeg · PyTorch<br/>pulmones · lóbulos · vía aérea · arterias · lesión"]
+        M --> K["Cuantificación<br/>% por pulmón y lóbulo · severidad 0–25"]
+        K --> RC["Informe de tomografía<br/>+ vista 3D"]
+    end
+    R -. "paso siguiente" .-> I["Informe único por paciente<br/>(aún no implementado)"]
+    RC -. "paso siguiente" .-> I
+    classDef modelo fill:#fde2e1,stroke:#c0392b,color:#222
+    classDef nuestro fill:#e7f1fb,stroke:#2e6da4,color:#222
+    classDef futuro fill:#f0efec,stroke:#999,color:#555,stroke-dasharray:4 3
+    class D,H,M modelo
+    class E,F,X,ZG,Z,K,R,RC,B,C nuestro
+    class I futuro
+```
+Rojo: modelos preentrenados · azul: código del proyecto · gris punteado: paso siguiente, aún no implementado.
+
+### ¿Cómo se integran hoy en el resultado?
+**Sí se integran los dos de radiografía.** Cuando se activa la segmentación pulmonar (`make ui-seg`), el resultado
+combina dos modelos sobre la misma imagen:
+
+1. `conv_MLP_84` clasifica y Grad-CAM saca su mapa de atención.
+2. PSPNet dibuja dónde están realmente los pulmones.
+3. El código del proyecto cruza las dos cosas: cuánta atención cayó dentro y fuera de cada pulmón, en qué zona, y si
+   hay que lanzar la alerta de atajo.
+
+Ese "informe detallado" no lo produce ningún modelo solo; sale de combinarlos. Si PSPNet falla su control de calidad,
+el sistema vuelve a las zonas geométricas y lo dice en el informe.
+
+**La tomografía todavía no se integra.** Hoy son dos apps separadas, con dos informes separados: radiografía en el
+puerto 8501 y tomografía en el 8502. No comparten paciente ni informe.
+
+**Cómo se integraría** (paso siguiente, no implementado). Los modelos no se tocan: se unen sus **resultados** por
+paciente, con reglas del controlador. Un informe integrado diría algo así (ejemplo ilustrativo):
+
+> **Paciente 1144123456**
+> - **Radiografía:** sugiere neumonía viral (0,97). Alerta de atajo: el modelo miró fuera de los pulmones; interpretar con cautela.
+> - **Tomografía:** lesión de 871 mL, 15,7 % del pulmón (derecho 15,1 %, izquierdo 16,3 %), severidad 10/25.
+> - **Lectura conjunta:** la tomografía confirma compromiso bilateral y mide su extensión.
+
+La radiografía sirve para **detectar** y la tomografía para **medir**. Los modelos siguen evaluándose por separado
+(tabla anterior) y su salida se junta en un solo informe.
+
+**Limitación:** los casos disponibles son de pacientes distintos (radiografías de RSNA y del curso; tomografía de
+COVID-19-CT-Seg), así que un informe integrado hoy sería ilustrativo. Validarlo exige un dataset con radiografía y
+tomografía del mismo paciente.
+
 ## Autoría y créditos
 **Esta versión** —arquitectura MVC, API REST y gRPC, interfaz clínica en Streamlit, pruebas, MLflow, Docker,
 CI/CD y documentación— fue desarrollada por el equipo del proyecto en el curso Gestión de Proyectos en IA y
