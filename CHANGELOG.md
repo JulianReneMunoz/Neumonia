@@ -1,6 +1,17 @@
 # Changelog
 Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) · [SemVer](https://semver.org/lang/es/).
 
+## [0.9.0] — sin publicar · Aplicación única
+### Cambiado
+- `make ui` abre una sola aplicación (puerto 8501) con dos páginas en el menú lateral: «Radiografía» y
+  «Tomografía 3D (prototipo)» (`view/app.py`, `st.navigation`) — ADR-0012, spec 010. Las vistas no cambian;
+  `make ui-ct` queda como respaldo en el puerto 8502. Paciente e informe compartidos: nivel 2, pendiente.
+### Agregado
+- Panel «Datos del paciente» en la barra lateral de la radiografía: documento, código del paciente
+  (seudónimo HMAC), código del dataset si el DICOM viene anonimizado, edad, sexo, proyección,
+  modalidad, región, tamaño y archivo (`presenter.patient_rows`). Nunca muestra PatientName.
+  Reemplaza el desplegable «Metadatos de la imagen».
+
 ## [0.7.0] — sin publicar · Prototipo de tomografía 3D (experimental)
 ### Agregado
 - App separada `make ui-ct` (puerto 8502): reconstrucción 3D **real** de pulmones, vía aérea, arterias
