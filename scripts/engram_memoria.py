@@ -181,6 +181,15 @@ MEMORIAS: list[tuple[str, str, str, str]] = [
         "torchvision/triton abortan juntos (LLVM). Nunca importar torch en el proceso principal ni con "
         "importorskip. Pesos SHA-256 019b167e. La consolidacion densa queda fuera de la mascara.",
     ),
+    (
+        "decision",
+        "decision/localizacion-rsna",
+        "Grad-CAM contra las cajas de RSNA (ADR-0009)",
+        "make evaluate-loc: 300 casos con cajas (semilla 42). Metricas con linea base de azar: pointing "
+        "game (region >= 99 % del maximo, IC de Wilson), enriquecimiento = energia en cajas / area "
+        "(1.0 = azar) e IoU de la region >= 0.5. Reportar global y tp_ (clasificados neumonia). Cajas "
+        "reescaladas a 512 sin recorte. Cifras pendientes en la Model Card hasta tener RSNA.",
+    ),
 ]
 
 

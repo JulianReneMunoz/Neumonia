@@ -11,3 +11,4 @@ convierte cada criterio en una prueba antes de escribir código. Estado: ✅ imp
 | [004 Despliegue en Droplet](004-despliegue.md) | HU-07 | 🟡 |
 | [005 Hallazgos y vistas 3D](005-hallazgos-3d.md) | HU-08 | ✅ (rama `feature/hallazgos-3d`) |
 | [006 Segmentación pulmonar](006-segmentacion-pulmonar.md) | HU-09 | ✅ (rama `feature/segmentacion-pulmonar`) |
+| [007 Grad-CAM vs. cajas RSNA](007-localizacion-rsna.md) | HU-10 | 🟡 (código listo; falta la corrida con RSNA) |
