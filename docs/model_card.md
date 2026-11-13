@@ -47,7 +47,7 @@ Latencia medida en CPU (2 vCPU): ≈ 0.5 s de inferencia + ≈ 0.5 s de Grad-CAM
 Contra las cajas de opacidad de los radiólogos de RSNA, en la geometría que ve el modelo (512×512).
 
 Corrida del 12/11/2026: 300 radiografías de RSNA con opacidad marcada (exportación adjudicada, semilla 42),
-umbral 0.5, zonas geométricas. Registrada en MLflow (experimento de localización; `run_id`: _anotar_).
+umbral 0.5, zonas geométricas. Registrada en MLflow (experimento de localización; `run_id`: b39b72dd2a414bd194a3802d4ecf30c8).
 
 | Métrica | Todos los casos con cajas (n = 300) | Clasificados como neumonía (n = 215) | Línea base (azar) |
 |---|---|---|---|
