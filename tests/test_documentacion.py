@@ -64,7 +64,7 @@ def test_architecture_documents_exist(path):
 def test_engram_memories_are_valid_and_unique():
     memorias = _memorias()
     topics = [m[1] for m in memorias]
-    assert len(memorias) == 18
+    assert len(memorias) == 19
     assert len(set(topics)) == len(topics)
     assert {m[0] for m in memorias} <= ENGRAM_TYPES
     assert all(m[2].strip() and m[3].strip() for m in memorias)

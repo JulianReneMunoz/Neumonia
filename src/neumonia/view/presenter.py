@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from neumonia.domain import Label, Prediction
+from neumonia.domain import Findings, Label, Prediction
 
 METADATA_LABELS = {
     "age": "Edad (años)",
@@ -62,3 +62,47 @@ def validate_patient_id(raw: str) -> str | None:
     if not value.isdigit() or not 5 <= len(value) <= 15:
         return "El documento debe tener entre 5 y 15 dígitos."
     return None
+
+
+ZONE_DISPLAY = {
+    "derecho_superior": "Der. superior",
+    "derecho_medio": "Der. medio",
+    "derecho_inferior": "Der. inferior",
+    "izquierdo_superior": "Izq. superior",
+    "izquierdo_medio": "Izq. medio",
+    "izquierdo_inferior": "Izq. inferior",
+}
+LATERALITY_DISPLAY = {
+    "derecho": "Pulmón derecho",
+    "izquierdo": "Pulmón izquierdo",
+    "bilateral": "Bilateral",
+    "sin_foco": "Difusa (sin foco)",
+}
+
+
+@dataclass(frozen=True)
+class FindingsView:
+    summary: list[str]
+    zone_rows: list[tuple[str, str, bool]]  # (zona, porcentaje, ¿dominante?)
+    laterality: str
+    extent: str
+    outside: str
+    shortcut_warning: bool
+
+
+def present_findings(findings: Findings) -> FindingsView:
+    return FindingsView(
+        summary=list(findings.summary),
+        zone_rows=[
+            (
+                ZONE_DISPLAY.get(zone, zone),
+                format_probability(value),
+                zone == findings.dominant_zone,
+            )
+            for zone, value in findings.zone_attention.items()
+        ],
+        laterality=LATERALITY_DISPLAY.get(findings.laterality, findings.laterality),
+        extent=f"{findings.extent_pct:.0f} %",
+        outside=f"{findings.out_of_lung_pct:.0f} % (razón {findings.outside_inside_ratio:.2f})",
+        shortcut_warning=findings.shortcut_warning,
+    )

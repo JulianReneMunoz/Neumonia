@@ -1,6 +1,17 @@
 # Changelog
 Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) · [SemVer](https://semver.org/lang/es/).
 
+## [0.4.0] — sin publicar · Informe de hallazgos y vistas 3D
+### Agregado
+- Informe de hallazgos asistido: atención del modelo por 6 zonas pulmonares aproximadas, lateralidad,
+  extensión y **alerta de posible atajo** (razón de densidad fuera/dentro de los pulmones ≥ 1.0) — ADR-0007, spec 005.
+- Campo aditivo `findings` en `POST /predict` (OpenAPI 0.4.0); la pasarela HTTP lo reconstruye.
+- UI con pestañas *Resultado*, *Informe detallado* y *Vista 3D* (relieve 3D de Grad-CAM y esquema pulmonar, Plotly).
+- Sección "Informe de hallazgos asistido" en el PDF.
+- 28 pruebas nuevas (`tests/test_hallazgos_3d.py`): 340 en total, cobertura 99 %.
+### Cambiado
+- Streamlit ≥ 1.50: `use_container_width` → `width="stretch"` (parámetro obsoleto).
+
 ## [0.3.0] — 2026-11-12 · M3 Construcción local
 ### Agregado
 - Arquitectura documentada: `docs/arquitectura/DESIGN.md` con 12 diagramas Mermaid/SVG (C4 + 4+1) y

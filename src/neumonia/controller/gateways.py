@@ -18,7 +18,7 @@ from PIL import Image
 
 from neumonia.config import Settings, get_settings
 from neumonia.controller.service import PneumoniaService
-from neumonia.domain import Label, Prediction
+from neumonia.domain import Findings, Label, Prediction
 from neumonia.model.readers import read_image
 
 
@@ -76,6 +76,7 @@ class HttpGateway:
             class_probabilities=body.get("class_probabilities", {}),
             heatmap=heatmap,
             metadata=body.get("metadata", {}),
+            findings=Findings.from_dict(body["findings"]) if body.get("findings") else None,
         )
         return GatewayResult(prediction, _original_rgb(data, filename))
 

@@ -27,7 +27,19 @@ El formato se detecta por la **firma binaria** del archivo y, si no la hay, por 
   "class_probabilities": {"bacteriana": 0.1039, "normal": 0.0079, "viral": 0.8882},
   "metadata": {"age": 6, "sex": "F", "view_position": "AP", "modality": "CR", "body_part": "CHEST"},
   "model_version": "conv_MLP_84@modelo-v1",
-  "request_id": "3f2b9c0e8a"
+  "request_id": "3f2b9c0e8a",
+  "findings": {
+    "zone_attention": {"derecho_superior": 0.217, "derecho_medio": 0.091, "derecho_inferior": 0.149,
+                       "izquierdo_superior": 0.185, "izquierdo_medio": 0.097, "izquierdo_inferior": 0.221},
+    "dominant_zone": "izquierdo_inferior",
+    "laterality": "bilateral",
+    "extent_pct": 4.0,
+    "out_of_lung_pct": 42.0,
+    "outside_inside_ratio": 1.04,
+    "shortcut_warning": true,
+    "attention_grid": [[0.0, "…31×31…"]],
+    "summary": ["El modelo sugiere hallazgos compatibles con neumonía de probable patrón viral (probabilidad 99.2%).", "…"]
+  }
 }
 ```
 
@@ -35,6 +47,10 @@ El formato se detecta por la **firma binaria** del archivo y, si no la hay, por 
 - `probability` es la probabilidad **de la etiqueta devuelta**: P(neumonía) = P(bacteriana) + P(viral)
   si `label = PNEUMONIA`, o P(normal) si `label = NORMAL` (ver ADR-0003).
 - `subtype`, `class_probabilities`, `metadata`, `model_version`, `request_id`: campos aditivos.
+- `findings` (v0.4.0, aditivo, puede ser `null`): informe de hallazgos asistido por zonas pulmonares
+  aproximadas (ADR-0007, spec 005). `derecho`/`izquierdo` se refieren al **paciente** (convención radiológica).
+  Describe la **atención del modelo**, no la ubicación de lesiones. `shortcut_warning = true` cuando el modelo
+  mira tanto o más fuera de los pulmones que dentro.
 
 ## Reglas
 - `Content-Type: application/json` en todas las respuestas JSON.

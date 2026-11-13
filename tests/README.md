@@ -1,6 +1,6 @@
 # Pruebas — Neumonía
 
-**309 pruebas · cobertura 98 % · patrón AAA.** `make test` (todas) · `make test-fast` (sin modelo real ni lentas, ~15 s) · `make cov`.
+**340 pruebas · cobertura 99 % · patrón AAA.** `make test` (todas) · `make test-fast` (sin modelo real ni lentas, ~15 s) · `make cov`.
 
 ## Smoke tests exigidos por el curso
 | Requisito (`tests/README` original) | Prueba |
@@ -22,6 +22,7 @@
 | `test_gradcam_and_classifier.py` | Grad-CAM y Keras con una red mínima real |
 | `test_api.py` · `test_grpc.py` | Contrato REST y gRPC |
 | `test_report_and_view.py` | PDF, historial, presentador, pasarelas local/HTTP |
+| `test_hallazgos_3d.py` | Zonas pulmonares, lateralidad, alerta de atajo, informe, `findings` en API/PDF/pasarela, figuras 3D (spec 005) |
 | `test_streamlit_view.py` | Render de la UI con `AppTest` |
 | `test_evaluation_and_data.py` | Métricas/AUC, RSNA, muestreo estratificado, MLflow, descarga con SHA |
 | `test_architecture.py` | Reglas MVC (*fitness functions*) |

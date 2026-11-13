@@ -18,6 +18,12 @@ class PredictionResponse(BaseModel):
     )
     model_version: str
     request_id: str
+    findings: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Hallazgos de atención por zona pulmonar (Grad-CAM). No es segmentación de lesiones."
+        ),
+    )
 
 
 class HealthResponse(BaseModel):

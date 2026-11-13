@@ -12,9 +12,11 @@ import numpy as np
 
 from neumonia.config import CLASS_NAMES
 from neumonia.controller.decision import DecisionPolicy, ThresholdPolicy
+from neumonia.controller.findings import with_summary
 from neumonia.domain import Prediction, RadiographImage
 from neumonia.model.classifier import Classifier
 from neumonia.model.gradcam import Explainer, overlay_heatmap
+from neumonia.model.localization import analyze_attention
 from neumonia.model.preprocessing import preprocess
 from neumonia.model.readers import DEFAULT_READERS, ImageReader, read_image
 
@@ -45,10 +47,14 @@ class PneumoniaService:
         decision = self.policy.decide(probs)
         names = getattr(self.classifier, "class_names", CLASS_NAMES)
         heatmap = None
+        findings = None
         explainer = self.explainer if explain else None
         if explainer is not None:
             cam = explainer.explain(batch, decision.target_index)
             heatmap = overlay_heatmap(cam, image.pixels)
+            findings = with_summary(
+                analyze_attention(cam), decision.label, decision.probability, decision.subtype
+            )
         return Prediction(
             label=decision.label,
             probability=decision.probability,
@@ -56,6 +62,7 @@ class PneumoniaService:
             class_probabilities={name: float(p) for name, p in zip(names, probs, strict=True)},
             heatmap=heatmap,
             metadata=dict(image.metadata),
+            findings=findings,
         )
 
     def predict_bytes(

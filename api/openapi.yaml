@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Neumonía — Inference API
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Contrato de inferencia del caso Neumonía (Keras/TF + Grad-CAM).
     Las claves `label`, `probability` y `gradcam_url` son el contrato mínimo del curso y no cambian
@@ -51,6 +51,16 @@ paths:
                 metadata: {age: 6, sex: F, view_position: AP, modality: CR}
                 model_version: conv_MLP_84@modelo-v1
                 request_id: 3f2b9c0e8a
+                findings:
+                  zone_attention: {derecho_superior: 0.217, derecho_medio: 0.091, derecho_inferior: 0.149, izquierdo_superior: 0.185, izquierdo_medio: 0.097, izquierdo_inferior: 0.221}
+                  dominant_zone: izquierdo_inferior
+                  laterality: bilateral
+                  extent_pct: 4.0
+                  out_of_lung_pct: 42.0
+                  outside_inside_ratio: 1.04
+                  shortcut_warning: true
+                  attention_grid: [[0.0, 0.1], [0.2, 0.3]]
+                  summary: ["El modelo sugiere hallazgos compatibles con neumonía de probable patrón viral (probabilidad 99.2%)."]
         '422':
           description: Entrada inválida (vacía, corrupta, formato no soportado o demasiado grande)
           content:
@@ -107,6 +117,34 @@ components:
           additionalProperties: true
         model_version: {type: string}
         request_id: {type: string}
+        findings:
+          $ref: '#/components/schemas/Findings'
+    Findings:
+      type: object
+      nullable: true
+      description: >-
+        Informe de hallazgos asistido (ADR-0007). Describe dónde se fijó el modelo (Grad-CAM) por zonas
+        pulmonares aproximadas; no es una segmentación de lesiones. null si no se calculó Grad-CAM.
+      required: [zone_attention, dominant_zone, laterality, extent_pct, out_of_lung_pct, outside_inside_ratio, shortcut_warning, attention_grid, summary]
+      properties:
+        zone_attention:
+          type: object
+          description: Atención media [0, 1] por zona; derecho = pulmón derecho del paciente (izquierda de la imagen)
+          additionalProperties: {type: number}
+        dominant_zone: {type: string, description: "Zona con mayor atención; vacío si no hay atención"}
+        laterality: {type: string, enum: [derecho, izquierdo, bilateral, sin_foco]}
+        extent_pct: {type: number, description: "% del campo pulmonar con atención >= 0.5"}
+        out_of_lung_pct: {type: number, description: "% de la atención total fuera de los campos pulmonares"}
+        outside_inside_ratio: {type: number, description: "Densidad de atención fuera/dentro (1.0 = uniforme; tope 99)"}
+        shortcut_warning: {type: boolean, description: "true si outside_inside_ratio >= 1.0 (posible atajo)"}
+        attention_grid:
+          type: array
+          description: Mapa Grad-CAM normalizado 31×31 para la vista 3D
+          items: {type: array, items: {type: number}}
+        summary:
+          type: array
+          items: {type: string}
+          description: Frases del informe en español, con la nota de limitación al final
     Error:
       type: object
       required: [error]

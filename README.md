@@ -32,7 +32,7 @@ contenerizar y desplegar con un contrato claro**. Este repositorio cubre los cua
 | Muestras de entrada | ✅ local | `artifacts/samples/` — 3 JPG + 2 DICOM (smoke, no miden calidad) |
 | Contrato de salida | ✅ implementado | `api/openapi.yaml`, `api/README.md`, `artifacts/expected/response_example.json` |
 | Docker CPU | ✅ | `docker/Dockerfile` (multi-etapa, no root, healthcheck) + `docker-compose.yml` |
-| Smoke test | ✅ | `smoke_infer.py`, `tests/` (309 pruebas, 98 %), `scripts/container_smoke.py` |
+| Smoke test | ✅ | `smoke_infer.py`, `tests/` (340 pruebas, 99 %), `scripts/container_smoke.py` |
 | API | ✅ | FastAPI `:8000` (`/health`, `/predict`, `/docs`) + gRPC `:50051` |
 | UI | ✅ | Streamlit clínico `:8501` |
 | MLflow | ✅ | `make evaluate` · `make mlflow` |
@@ -40,7 +40,7 @@ contenerizar y desplegar con un contrato claro**. Este repositorio cubre los cua
 | Kit agéntico | ✅ | `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` (10, incl. graphify), `.claude/agents/` (2), hooks |
 | Arquitectura | ✅ | `docs/arquitectura/`: DESIGN.md + 12 diagramas C4/4+1 + trazabilidad metodologías ↔ arquitectura |
 | Grafo (graphify) | ✅ | `graphify-out/` (1 025 nodos, 0 ciclos) · `make grafo` |
-| Memoria (Engram) | ✅ | `.engram/` (18 decisiones y hallazgos, proyecto `neumonia`) · `make memoria` |
+| Memoria (Engram) | ✅ | `.engram/` (19 decisiones y hallazgos, proyecto `neumonia`) · `make memoria` |
 
 ## 3. Inicio rápido en Windows (`C:\Neumonia`)
 
@@ -53,7 +53,7 @@ cd C:\Neumonia
 make install          # uv sync --frozen --all-groups  (Python 3.13 lo instala uv)
 make model            # descarga conv_MLP_84.h5 y verifica SHA-256
 make smoke            # ✓ 5 muestras · contrato OK
-make check            # ruff + formato + 309 pruebas con cobertura ≥ 80 %
+make check            # ruff + formato + 340 pruebas con cobertura ≥ 80 %
 
 # 3) Usar
 make ui               # http://localhost:8501  (interfaz clínica)
@@ -151,7 +151,7 @@ C:\Neumonia
 ├── data/        JPG.zip · DICOM.zip · raw/ · processed/
 ├── api/         openapi.yaml · README.md
 ├── docker/      Dockerfile · README.md          + docker-compose.yml en la raíz
-├── tests/       17 archivos · 309 pruebas
+├── tests/       18 archivos · 340 pruebas
 ├── scripts/     fetch_model · fetch_dataset · evaluate · container_smoke · fetch_artifacts.sh
 ├── docs/        metodologias · dataset · M2_propuesta · model_card · M4_despliegue · postmortem · adr/ · img/
 │   └── arquitectura/  DESIGN · METODOLOGIAS_ARQUITECTURA · GRAFO_GRAPHIFY · MEMORIA_ENGRAM · diagramas/ (12 .mmd + .svg)
@@ -182,7 +182,7 @@ Descripción completa y justificación de cada una en **[`docs/metodologias.md`]
 | **Kanban** (Scrumban) | Equipo ≤ 4 con dedicación parcial y fechas fijas; WIP limitado |
 | **BMC + OKR/KPI** | Exigidos en M2; valor medible (sensibilidad, latencia p95) |
 | **Riesgos ISO 31000 + EU AI Act** | Apoyo diagnóstico = IA de alto riesgo; lista de obligaciones |
-| **MVC + Estrategia + DIP** | DoD del M1 y Clase 1; 300 de 309 pruebas sin cargar el modelo |
+| **MVC + Estrategia + DIP** | DoD del M1 y Clase 1; 331 de 340 pruebas sin cargar el modelo |
 | **Contract-first (OpenAPI)** + REST/gRPC | El curso evalúa "un contrato claro"; el modelo puede cambiar sin romper clientes |
 | **Pirámide de pruebas + AAA + fitness functions** | DoD del M1; arquitectura verificada en CI |
 | **uv + 12-factor + Docker** | Reproducibilidad (Windows, Linux, contenedor) con un solo `uv.lock` |
@@ -222,7 +222,7 @@ Subagentes: `revisor-arquitectura` (revisión de solo lectura antes del PR) y `e
 
 **graphify (mapa) + Engram (memoria)**:
 - `make grafo` reconstruye `graphify-out/`. El agente consulta `uv run graphify query "..."` antes de leer archivos; un hook se lo recuerda. Detalle en [GRAFO_GRAPHIFY.md](docs/arquitectura/GRAFO_GRAPHIFY.md).
-- `engram setup claude-code` (una vez) y luego `make memoria` cargan las 18 decisiones y hallazgos del proyecto. El agente las recupera con `mem_search` y no re-litiga ADR. Detalle en [MEMORIA_ENGRAM.md](docs/arquitectura/MEMORIA_ENGRAM.md).
+- `engram setup claude-code` (una vez) y luego `make memoria` cargan las 19 decisiones y hallazgos del proyecto. El agente las recupera con `mem_search` y no re-litiga ADR. Detalle en [MEMORIA_ENGRAM.md](docs/arquitectura/MEMORIA_ENGRAM.md).
 Hooks: Ruff formatea cada `.py` editado; `guard_bash.py` bloquea `pip install`, `git add *.h5`, secretos y *push* forzado.
 Ejemplo de sesión: *"Usa la skill mvc-feature para agregar soporte TIFF con su prueba y luego pide al subagente
 revisor-arquitectura que revise el cambio."*
@@ -231,7 +231,7 @@ revisor-arquitectura que revise el cambio."*
 
 | Módulo | Peso | Evidencia |
 |---|---|---|
-| **M1** Código heredado, arquitectura y entorno | 25 % | MVC en `src/neumonia`, uv, 309 pruebas AAA, Docker CPU, Streamlit, CI + ruff + Gitflow, reporte PDF |
+| **M1** Código heredado, arquitectura y entorno | 25 % | MVC en `src/neumonia`, uv, 340 pruebas AAA, Docker CPU, Streamlit, CI + ruff + Gitflow, reporte PDF |
 | **M2** Propuesta | 35 % | [`docs/M2_propuesta.md`](docs/M2_propuesta.md): Data Thinking, BMC, OKR/KPI, alternativas, historias con AC, cronograma, riesgos, Kanban |
 | **M3** Construcción local | 25 % | FastAPI + gRPC, UI, MLflow, dataset RSNA con metadatos, Docker Compose |
 | **M4** Producción | 15 % | [`.gitlab-ci.yml`](.gitlab-ci.yml), [`docs/M4_despliegue.md`](docs/M4_despliegue.md), [`docs/postmortem.md`](docs/postmortem.md) |
