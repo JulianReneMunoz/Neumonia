@@ -1,12 +1,23 @@
 """Extracción de metadatos DICOM útiles y NO identificables.
 
 Solo se exponen campos demográficos y técnicos agregados (edad, sexo, proyección...).
-Nunca se devuelven PatientID, PatientName, fechas ni instituciones (minimización de datos,
-Ley 1581 de 2012 en Colombia y art. 10 del EU AI Act sobre gobernanza de datos).
+Nunca se devuelven PatientName, fechas ni instituciones (minimización de datos, Ley 1581 de
+2012 en Colombia y art. 10 del EU AI Act sobre gobernanza de datos).
+
+El PatientID tampoco se devuelve tal cual. En su lugar:
+- `patient_code`: un **seudónimo** (HMAC-SHA256 del PatientID, p. ej. `PAC-7F3A91C2`). No revela el
+  identificador, pero es el mismo para la radiografía y la tomografía de un paciente, lo que permite
+  unirlas. La clave sale de `NEUMONIA_PSEUDONYM_KEY`; en un despliegue real debe ser secreta, porque
+  con una clave conocida un documento corto podría adivinarse por fuerza bruta.
+- `dataset_code`: el PatientID original, **solo** si el DICOM declara que ya fue anonimizado
+  (`PatientIdentityRemoved = YES`, como en TCIA o RSNA); ahí el código es público y no identifica.
 """
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import os
 import re
 from typing import Any
 
@@ -32,6 +43,9 @@ FORBIDDEN_FIELDS: frozenset[str] = frozenset(
         "AccessionNumber",
     }
 )
+
+PSEUDONYM_ENV = "NEUMONIA_PSEUDONYM_KEY"
+DEFAULT_PSEUDONYM_KEY = "neumonia-academico"  # solo para uso académico: cambiar en producción
 
 _AGE_PATTERN = re.compile(r"^\s*(\d{1,3})\s*([DWMY]?)\s*$", re.IGNORECASE)
 _AGE_FACTORS = {"": 1.0, "Y": 1.0, "M": 1 / 12, "W": 1 / 52, "D": 1 / 365}
@@ -86,4 +100,17 @@ def extract_metadata(dataset: Any) -> dict[str, Any]:
             out[name] = int(value)
         else:
             out[name] = str(value).strip()
+    raw_id = str(dataset.get("PatientID", None) or "").strip()
+    if raw_id:
+        out["patient_code"] = pseudonym(raw_id)
+        removed = str(dataset.get("PatientIdentityRemoved", None) or "").strip().upper()
+        if removed == "YES":
+            out["dataset_code"] = raw_id
     return out
+
+
+def pseudonym(patient_id: str, key: str | None = None) -> str:
+    """Seudónimo estable y no reversible sin la clave: `PAC-` + 8 hexadecimales del HMAC-SHA256."""
+    secret = key or os.environ.get(PSEUDONYM_ENV) or DEFAULT_PSEUDONYM_KEY
+    digest = hmac.new(secret.encode(), patient_id.strip().encode(), hashlib.sha256).hexdigest()
+    return "PAC-" + digest[:8].upper()
