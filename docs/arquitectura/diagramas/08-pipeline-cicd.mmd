@@ -2,7 +2,7 @@
 flowchart LR
   pc["pre-commit<br/>ruff · secretos · archivos grandes · uv.lock"] --> push["git push / MR"]
   push --> l["① ruff<br/>lint + formato"]
-  l -->|ok| t["② pytest<br/>340 pruebas · cobertura ≥ 80 %<br/>+ smoke_infer.py"]
+  l -->|ok| t["② pytest<br/>377 pruebas · cobertura ≥ 80 %<br/>+ smoke_infer.py"]
   t -->|ok| b["③ docker build<br/>+ container_smoke.py<br/>/health · /predict · 422"]
   b -->|ok| s["④ Trivy<br/>CVE críticas"]
   s -->|ok| g{"⑤ Aprobación<br/>humana"}

@@ -114,7 +114,8 @@ def _write_findings(pdf: FPDF, findings: Findings) -> None:
         pdf.multi_cell(0, 5, _latin1(f"- {line}"), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(2)
     pdf.set_font("Helvetica", "B", 9)
-    pdf.cell(110, 6, _latin1("Zona pulmonar (aproximada)"), border=1)
+    kind = "silueta segmentada" if findings.lung_source == "pspnet" else "aproximada"
+    pdf.cell(110, 6, _latin1(f"Zona pulmonar ({kind})"), border=1)
     pdf.cell(40, 6, _latin1("Atención media"), border=1, new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", "", 9)
     for zone, value in findings.zone_attention.items():

@@ -24,6 +24,7 @@ IMG_SIZE = 512
 GRADCAM_LAYER = "conv10_thisone"
 CLASS_NAMES: tuple[str, ...] = ("bacteriana", "normal", "viral")
 NORMAL_INDEX = 1
+LUNG_SEGMENTERS: tuple[str, ...] = ("geometrica", "pspnet")
 
 
 def _env_path(name: str, default: Path) -> Path:
@@ -53,6 +54,7 @@ class Settings:
     max_upload_mb: float = 20.0
     max_gradcam_files: int = 200
     api_url: str | None = None
+    lung_segmenter: str = "geometrica"  # geometrica | pspnet (extra `seg`, ADR-0008)
     mlflow_tracking_uri: str = (
         "sqlite:///mlflow.db"  # MLflow 3: el file store está en mantenimiento
     )
@@ -68,6 +70,7 @@ class Settings:
             reports_dir=_env_path("NEUMONIA_REPORTS_DIR", base.reports_dir),
             max_upload_mb=_env_float("NEUMONIA_MAX_UPLOAD_MB", base.max_upload_mb),
             api_url=os.environ.get("NEUMONIA_API_URL") or None,
+            lung_segmenter=os.environ.get("NEUMONIA_LUNG_SEGMENTER", base.lung_segmenter).lower(),
             mlflow_tracking_uri=os.environ.get("MLFLOW_TRACKING_URI", base.mlflow_tracking_uri),
         )
 
@@ -76,6 +79,8 @@ class Settings:
             raise ValueError("El umbral debe estar en el intervalo abierto (0, 1).")
         if self.max_upload_mb <= 0:
             raise ValueError("max_upload_mb debe ser positivo.")
+        if self.lung_segmenter not in LUNG_SEGMENTERS:
+            raise ValueError(f"lung_segmenter debe ser uno de {LUNG_SEGMENTERS}.")
 
 
 @lru_cache(maxsize=1)

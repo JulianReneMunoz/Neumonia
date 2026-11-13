@@ -14,6 +14,7 @@ from neumonia.config import get_settings
 from neumonia.controller.errors import GatewayError, InvalidImageError, ModelNotFoundError
 from neumonia.controller.gateways import build_gateway
 from neumonia.controller.report import DISCLAIMER, append_history, build_pdf_report
+from neumonia.view.overlays import zones_overlay
 from neumonia.view.presenter import present, present_findings, validate_patient_id
 from neumonia.view.visual3d import attention_surface_figure, lungs_3d_figure
 
@@ -102,9 +103,19 @@ if result is not None:
             m1.metric("Lateralidad", fv.laterality)
             m2.metric("Extensión de alta atención", fv.extent)
             m3.metric("Atención fuera de los pulmones", fv.outside)
-            st.table(
+            col_zonas, col_tabla = st.columns([2, 3])
+            if findings.lung_grid:
+                col_zonas.image(
+                    zones_overlay(result.original_rgb, findings.lung_grid, findings.dominant_zone),
+                    caption=(
+                        f"{fv.segmentation}: azul = pulmón derecho, verde = izquierdo, "
+                        "naranja = zona dominante"
+                    ),
+                    width="stretch",
+                )
+            col_tabla.table(
                 {
-                    "Zona pulmonar (aprox.)": [z for z, _, _ in fv.zone_rows],
+                    "Zona pulmonar": [z for z, _, _ in fv.zone_rows],
                     "Atención media": [v for _, v, _ in fv.zone_rows],
                     "Dominante": ["◀" if d else "" for _, _, d in fv.zone_rows],
                 }

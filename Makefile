@@ -9,7 +9,8 @@ ENGRAM_BIN    ?= /home/linuxbrew/.linuxbrew/bin/engram
 WSL_PROJECT   ?= /mnt/c/Neumonia
 .PHONY: help install model data-course dataset-rsna dataset-kermany run api ui grpc proto \
         smoke test test-fast cov lint format check evaluate mlflow docker-build docker-up \
-        docker-down docker-smoke hooks grafo memoria memoria-exportar memoria-buscar diagramas clean
+        docker-down docker-smoke hooks grafo memoria memoria-exportar memoria-buscar diagramas clean \
+        seg ui-seg
 
 help:  ## Lista los comandos
 	@uv run python -c "import re,sys; [print(f'  make {m[0]:<16} {m[1]}') for m in re.findall(r'^([a-z-]+):.*?## (.*)$$', open('Makefile', encoding='utf-8').read(), re.M)]"
@@ -35,6 +36,14 @@ api: model  ## API REST en http://localhost:8000/docs
 	uv run neumonia-api
 
 ui: model  ## Interfaz clínica Streamlit en http://localhost:8501
+	uv run streamlit run src/neumonia/view/streamlit_app.py
+
+seg:  ## Instala la segmentación pulmonar real (PyTorch + TorchXRayVision) y verifica PSPNet
+	uv sync --all-groups --extra seg
+	uv run python scripts/fetch_lung_model.py
+
+ui-seg: export NEUMONIA_LUNG_SEGMENTER = pspnet
+ui-seg: model  ## UI con segmentación pulmonar real (requiere make seg una vez)
 	uv run streamlit run src/neumonia/view/streamlit_app.py
 
 grpc: model  ## Servidor gRPC en el puerto 50051

@@ -3,8 +3,9 @@
 Advertencias de diseño (ver ADR-0007):
 - Grad-CAM indica **dónde miró el modelo**, no dónde está la lesión. El modelo no fue entrenado
   para segmentar ni localizar; estas cifras describen su atención, no la enfermedad.
-- Las zonas son una **aproximación geométrica** de los campos pulmonares en una radiografía frontal
-  estándar (sin segmentación pulmonar). Imágenes rotadas o recortadas reducen su exactitud.
+- Las zonas salen de `LungMasks`: la silueta segmentada (PSPNet, ADR-0008) o, por defecto o como
+  respaldo, una **aproximación geométrica** de los campos pulmonares. Cada pulmón se divide en
+  tercios superior / medio / inferior según **su propia altura**.
 - La alerta de atajo compara la **densidad** de atención (por píxel) fuera y dentro de los campos
   pulmonares: con atención uniforme la razón es 1.0; si es >= 1.0 el modelo mira tanto o más
   fuera de los pulmones (marcadores, bordes, dispositivos) que dentro.
@@ -18,12 +19,9 @@ import cv2
 import numpy as np
 
 from neumonia.config import IMG_SIZE
-from neumonia.domain import ZONE_NAMES, Findings
+from neumonia.domain import ZONE_NAMES, Findings, LungMasks
+from neumonia.model.lung_segmentation import geometric_masks
 
-# Campos pulmonares aproximados como fracción del ancho/alto de la imagen.
-TOP, BOTTOM = 0.12, 0.88
-RIGHT_LUNG_X = (0.08, 0.47)  # mitad izquierda de la imagen = pulmón derecho del paciente
-LEFT_LUNG_X = (0.53, 0.92)
 HIGH_ATTENTION = 0.5
 SHORTCUT_DENSITY_RATIO = 1.0  # atención por píxel fuera >= dentro → sospecha de atajo
 FOCUS_MIN = 0.15
@@ -37,25 +35,28 @@ def upsample(cam: np.ndarray, size: int = IMG_SIZE) -> np.ndarray:
     return np.clip(resized, 0.0, 1.0)
 
 
-def zone_masks(size: int = IMG_SIZE) -> dict[str, np.ndarray]:
-    """Seis máscaras booleanas (derecho/izquierdo × superior/medio/inferior)."""
+def zones_from_lungs(lungs: LungMasks) -> dict[str, np.ndarray]:
+    """Seis máscaras disjuntas: cada pulmón partido en tercios de su propia altura."""
     masks: dict[str, np.ndarray] = {}
-    rows = np.linspace(TOP, BOTTOM, 4) * size
-    for side, (x0, x1) in (("derecho", RIGHT_LUNG_X), ("izquierdo", LEFT_LUNG_X)):
-        c0, c1 = int(x0 * size), int(x1 * size)
+    for side, lung in (("derecho", lungs.right), ("izquierdo", lungs.left)):
+        rows = np.nonzero(lung.any(axis=1))[0]
+        bands = np.zeros(lung.shape[0], dtype=int) - 1
+        if rows.size:
+            edges = np.linspace(rows[0], rows[-1] + 1, 4).astype(int)
+            for i in range(3):
+                bands[edges[i] : edges[i + 1]] = i
         for i, level in enumerate(("superior", "medio", "inferior")):
-            r0, r1 = int(rows[i]), int(rows[i + 1])
-            mask = np.zeros((size, size), dtype=bool)
-            mask[r0:r1, c0:c1] = True
-            masks[f"{side}_{level}"] = mask
+            masks[f"{side}_{level}"] = lung & (bands == i)[:, None]
     return masks
 
 
+def zone_masks(size: int = IMG_SIZE) -> dict[str, np.ndarray]:
+    """Zonas geométricas de referencia (compatibilidad con la versión 0.4.0)."""
+    return zones_from_lungs(geometric_masks(size))
+
+
 def lung_field(size: int = IMG_SIZE) -> np.ndarray:
-    union = np.zeros((size, size), dtype=bool)
-    for mask in zone_masks(size).values():
-        union |= mask
-    return union
+    return geometric_masks(size).lung_field
 
 
 def classify_laterality(right: float, left: float) -> str:
@@ -68,20 +69,31 @@ def classify_laterality(right: float, left: float) -> str:
     return "bilateral"
 
 
-def analyze_attention(cam: np.ndarray, size: int = IMG_SIZE) -> Findings:
-    """Resume un mapa de Grad-CAM normalizado ([0, 1], cualquier resolución) por zonas."""
-    raw = np.clip(np.nan_to_num(np.asarray(cam, dtype=np.float64)), 0.0, 1.0)
-    heat = upsample(raw, size).astype(np.float64)
-    masks = zone_masks(size)
-    field = lung_field(size)
+def _safe_mean(values: np.ndarray) -> float:
+    return float(values.mean()) if values.size else 0.0
 
-    zone_attention = {name: float(heat[masks[name]].mean()) for name in ZONE_NAMES}
+
+def analyze_attention(
+    cam: np.ndarray, size: int = IMG_SIZE, lungs: LungMasks | None = None
+) -> Findings:
+    """Resume un mapa de Grad-CAM normalizado ([0, 1], cualquier resolución) por zonas.
+
+    `lungs` son los campos pulmonares a `size`×`size`; si no se dan, se usan los geométricos.
+    """
+    raw = np.clip(np.nan_to_num(np.asarray(cam, dtype=np.float64)), 0.0, 1.0)
+    lungs = lungs if lungs is not None else geometric_masks(size)
+    size = lungs.right.shape[0]
+    heat = upsample(raw, size).astype(np.float64)
+    masks = zones_from_lungs(lungs)
+    field = lungs.lung_field
+
+    zone_attention = {name: _safe_mean(heat[masks[name]]) for name in ZONE_NAMES}
     total = float(heat.sum())
     out_of_lung_pct = 100.0 * float(heat[~field].sum()) / total if total > 0 else 0.0
-    inside_density = float(heat[field].mean())
-    outside_density = float(heat[~field].mean())
+    inside_density = _safe_mean(heat[field])
+    outside_density = _safe_mean(heat[~field])
     ratio = 0.0 if total <= 0 else min(MAX_RATIO, outside_density / max(inside_density, 1e-09))
-    extent_pct = 100.0 * float((heat[field] >= HIGH_ATTENTION).mean())
+    extent_pct = 100.0 * _safe_mean(heat[field] >= HIGH_ATTENTION)
 
     # Zona más intensa de cada lado: un foco en una sola zona no se diluye con las otras dos.
     right = max(v for k, v in zone_attention.items() if k.startswith("derecho"))
@@ -98,4 +110,7 @@ def analyze_attention(cam: np.ndarray, size: int = IMG_SIZE) -> Findings:
         shortcut_warning=total > 0 and ratio >= SHORTCUT_DENSITY_RATIO,
         outside_inside_ratio=ratio,
         attention_grid=raw.tolist(),
+        lung_source=lungs.source,
+        lung_note=lungs.note,
+        lung_grid=lungs.label_grid(),
     )
