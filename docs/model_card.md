@@ -1,4 +1,4 @@
-# Model Card — conv_MLP_84 (detector de neumonía)
+# Model Card — conv_MLP_84 (apoyo al diagnóstico de neumonía)
 
 Formato de Mitchell et al. (2019), *Model Cards for Model Reporting*.
 

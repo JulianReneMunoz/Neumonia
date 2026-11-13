@@ -1,6 +1,6 @@
 ---
 name: gradcam-review
-description: Revisa mapas Grad-CAM del detector de neumonía para detectar aprendizaje por atajos (marcadores, bordes, texto) y documentar hallazgos de explicabilidad. Úsala al preparar la sustentación, la Model Card o al cambiar el modelo.
+description: Revisa mapas Grad-CAM del modelo de apoyo al diagnóstico de neumonía para detectar aprendizaje por atajos (marcadores, bordes, texto) y documentar hallazgos de explicabilidad. Úsala al preparar la sustentación, la Model Card o al cambiar el modelo.
 ---
 
 # Revisión de explicabilidad (Grad-CAM)

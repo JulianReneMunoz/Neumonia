@@ -1,4 +1,4 @@
-"""Neumonía — detector de neumonía con Keras/TF y Grad-CAM (arquitectura MVC).
+"""Neumonía — apoyo al diagnóstico de neumonía con Keras/TF y Grad-CAM (arquitectura MVC).
 
 Capas:
 - `neumonia.model`      → Modelo: lectura de imágenes, preprocesamiento, red neuronal, Grad-CAM.

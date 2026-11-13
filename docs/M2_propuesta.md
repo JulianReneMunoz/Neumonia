@@ -1,4 +1,4 @@
-# M2 · Propuesta del proyecto — Detector de neumonía con explicabilidad
+# M2 · Propuesta del proyecto — Apoyo al diagnóstico de neumonía con explicabilidad
 
 > Peso: 35 %. Incluye Data Thinking, Business Model Canvas, OKR y KPI, problema, alcance, alternativas,
 > historias de usuario con criterios de aceptación, cronograma, riesgos y tablero Kanban.
