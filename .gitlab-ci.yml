@@ -41,7 +41,7 @@ pytest:
     - key: model-d9548ff6
       paths: [artifacts/model/]
   script:
-    - uv sync --frozen --all-groups
+    - uv sync --frozen --all-groups --extra ct
     - uv run python scripts/fetch_model.py
     - uv run pytest -v --cov --cov-report=xml --cov-report=term --junitxml=report.xml --cov-fail-under=80
     - uv run python smoke_infer.py

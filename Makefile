@@ -10,13 +10,13 @@ WSL_PROJECT   ?= /mnt/c/Neumonia
 .PHONY: help install model data-course dataset-rsna dataset-kermany run api ui grpc proto \
         smoke test test-fast cov lint format check evaluate mlflow docker-build docker-up \
         docker-down docker-smoke hooks grafo memoria memoria-exportar memoria-buscar diagramas clean \
-        seg ui-seg evaluate-loc
+        seg ui-seg evaluate-loc ct-setup ct-precompute ui-ct
 
 help:  ## Lista los comandos
 	@uv run python -c "import re,sys; [print(f'  make {m[0]:<16} {m[1]}') for m in re.findall(r'^([a-z-]+):.*?## (.*)$$', open('Makefile', encoding='utf-8').read(), re.M)]"
 
-install:  ## Crea .venv con las versiones exactas de uv.lock (incluye dev y mlops)
-	uv sync --frozen --all-groups
+install:  ## Crea .venv con las versiones exactas de uv.lock (dev, mlops y el extra liviano ct)
+	uv sync --frozen --all-groups --extra ct
 
 model:  ## Descarga conv_MLP_84.h5 y verifica su SHA-256
 	uv run python scripts/fetch_model.py
@@ -39,12 +39,21 @@ ui: model  ## Interfaz clínica Streamlit en http://localhost:8501
 	uv run streamlit run src/neumonia/view/streamlit_app.py
 
 seg:  ## Instala la segmentación pulmonar real (PyTorch + TorchXRayVision) y verifica PSPNet
-	uv sync --all-groups --extra seg
+	uv sync --all-groups --extra ct --extra seg
 	uv run python scripts/fetch_lung_model.py
 
 ui-seg: export NEUMONIA_LUNG_SEGMENTER = pspnet
 ui-seg: model  ## UI con segmentación pulmonar real (requiere make seg una vez)
 	uv run streamlit run src/neumonia/view/streamlit_app.py
+
+ct-setup:  ## (Prototipo) Instala MEDPSeg en su propio entorno para tomografías (ADR-0010)
+	uv run --extra ct python scripts/setup_medpseg.py
+
+ct-precompute:  ## (Prototipo) Segmenta una tomografía: make ct-precompute CT=ruta.nii.gz
+	uv run --extra ct python scripts/ct_precompute.py --ct "$(CT)"
+
+ui-ct:  ## (Prototipo) Tomografía en 3D: pulmones, vía aérea, arterias y lesión (puerto 8502)
+	uv run --extra ct streamlit run src/neumonia/view/ct_app.py --server.port 8502
 
 grpc: model  ## Servidor gRPC en el puerto 50051
 	uv run neumonia-grpc

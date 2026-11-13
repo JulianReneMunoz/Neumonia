@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with: {enable-cache: true}
-      - run: uv sync --frozen --all-groups
+      - run: uv sync --frozen --all-groups --extra ct
       - name: Caché del modelo (118 MB)
         uses: actions/cache@v4
         with:

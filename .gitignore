@@ -52,3 +52,6 @@ Thumbs.db
 
 # --- graphify (se versiona el grafo, no la caché) ---
 graphify-out/cache/
+
+# Prototipo de tomografía: entorno y pesos de MEDPSeg (make ct-setup)
+.medpseg/
