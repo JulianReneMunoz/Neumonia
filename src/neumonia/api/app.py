@@ -4,6 +4,10 @@ Contrato (api/openapi.yaml):
     GET  /health   → 200 {status, model_loaded, model_version}
     POST /predict  → 200 {label, probability, gradcam_url, ...} | 422 entrada inválida | 500 {error}
     GET  /static/gradcam/{id}.png → imagen Grad-CAM
+
+El frontend desacoplado (`frontend/`, spec 012) consume esta API desde otro origen: por eso hay
+CORS para los orígenes de `NEUMONIA_CORS_ORIGINS`. El modelo se carga una sola vez al arrancar
+(lifespan); si falta el archivo, la API arranca igual y `/health` responde `model_loaded: false`.
 """
 
 from __future__ import annotations
@@ -11,10 +15,12 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -34,6 +40,17 @@ def _prune(directory: Path, keep: int) -> None:
         old.unlink(missing_ok=True)
 
 
+def warm_up(service: Callable[[], PneumoniaService]) -> bool:
+    """Carga el modelo una vez al arrancar. Si falla, la API sigue viva y /health lo reporta."""
+    try:
+        classifier = service().classifier
+        getattr(classifier, "model", None)  # KerasClassifier carga el .h5 al leer `model`
+    except Exception as exc:  # arrancar sin modelo es mejor que no arrancar
+        logger.warning("El modelo no se pudo cargar al arrancar: %s", exc)
+        return False
+    return True
+
+
 def create_app(
     service_factory: Callable[[], PneumoniaService] | None = None,
     settings: Settings | None = None,
@@ -46,19 +63,32 @@ def create_app(
 
     gradcam_dir = settings.static_dir / "gradcam"
     gradcam_dir.mkdir(parents=True, exist_ok=True)
-
-    app = FastAPI(
-        title="Neumonía — Inference API",
-        version=__version__,
-        description="Detección de neumonía en radiografías de tórax con Grad-CAM. Uso académico.",
-    )
-    app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
     state: dict[str, PneumoniaService] = {}
 
     def service() -> PneumoniaService:
         if "svc" not in state:
             state["svc"] = service_factory()
         return state["svc"]
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        warm_up(service)
+        yield
+
+    app = FastAPI(
+        title="Neumonía — Inference API",
+        version=__version__,
+        description="Detección de neumonía en radiografías de tórax con Grad-CAM. Uso académico.",
+        lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_origins),
+        allow_methods=["GET", "POST"],
+        allow_headers=["*"],
+        expose_headers=["X-Process-Time-ms"],
+    )
+    app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
 
     @app.middleware("http")
     async def timing(request: Request, call_next):

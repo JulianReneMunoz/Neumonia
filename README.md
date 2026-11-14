@@ -58,8 +58,9 @@ make smoke            # ✓ 5 muestras · contrato OK
 make check            # ruff + formato + 340 pruebas con cobertura ≥ 80 %
 
 # 3) Usar
-make ui               # http://localhost:8501  (interfaz clínica)
-make api              # http://localhost:8000/docs
+make backend          # http://localhost:8000/docs  (API FastAPI; carga el modelo al arrancar)
+make frontend         # http://localhost:5173       (frontend desacoplado HTML/JS; otra terminal)
+make ui               # http://localhost:8501       (app Streamlit interna; no se usa en la demo del M3)
 make evaluate; make mlflow   # experimento en http://127.0.0.1:5000
 ```
 Sin `make`: cada objetivo equivale a un comando `uv` (ver el `Makefile`), por ejemplo `uv run streamlit run src/neumonia/view/streamlit_app.py`.
@@ -74,7 +75,8 @@ macOS / Linux: los mismos comandos (`brew install uv make` o `curl -LsSf https:/
 | `make install` | Entorno idéntico a `uv.lock` |
 | `make model` | Descarga y verifica el modelo |
 | `make data-course` / `make dataset-rsna` / `make dataset-kermany` | Datos + catálogo de metadatos |
-| `make ui` · `make api` · `make grpc` | Interfaz, API REST, servidor gRPC |
+| `make backend` + `make frontend` | **Demo del M3**: API FastAPI (:8000) + frontend desacoplado HTML/JS (:5173) que la consume por HTTP (ADR-0013, SPEC-012) |
+| `make ui` · `make api` · `make grpc` | App Streamlit interna, API REST, servidor gRPC |
 | `make smoke` | Smoke test del curso (carga → infiere → valida contrato) |
 | `make test` · `make test-fast` · `make cov` · `make check` | Pruebas y compuertas |
 | `make lint` · `make format` · `make hooks` | Ruff y pre-commit |

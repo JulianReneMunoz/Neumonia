@@ -7,6 +7,9 @@ Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) · [SemVer](
   «Tomografía 3D (prototipo)» (`view/app.py`, `st.navigation`) — ADR-0012, spec 010. Las vistas no cambian;
   `make ui-ct` queda como respaldo en el puerto 8502. Paciente e informe compartidos: nivel 2, pendiente.
 ### Agregado
+- Frontend desacoplado HTML/JS (`frontend/`, `make frontend` en :5173) que consume la API por HTTP: estados
+  idle/loading/success/error, Grad-CAM, confianza y datos del paciente. La API agrega CORS
+  (`NEUMONIA_CORS_ORIGINS`) y carga el modelo al arrancar (lifespan). `make backend`. ADR-0013, SPEC-012.
 - Panel «Datos del paciente» en la barra lateral de la radiografía: documento, código del paciente
   (seudónimo HMAC), código del dataset si el DICOM viene anonimizado, edad, sexo, proyección,
   modalidad, región, tamaño y archivo (`presenter.patient_rows`). Nunca muestra PatientName.

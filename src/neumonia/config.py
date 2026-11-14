@@ -32,6 +32,13 @@ def _env_path(name: str, default: Path) -> Path:
     return Path(value).expanduser() if value else default
 
 
+def _env_list(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return tuple(item.strip().rstrip("/") for item in raw.split(",") if item.strip())
+
+
 def _env_float(name: str, default: float) -> float:
     value = os.environ.get(name)
     return float(value) if value else default
@@ -54,6 +61,8 @@ class Settings:
     max_upload_mb: float = 20.0
     max_gradcam_files: int = 200
     api_url: str | None = None
+    # Orígenes del frontend desacoplado (make frontend, puerto 5173) que pueden llamar a la API.
+    cors_origins: tuple[str, ...] = ("http://localhost:5173", "http://127.0.0.1:5173")
     lung_segmenter: str = "geometrica"  # geometrica | pspnet (extra `seg`, ADR-0008)
     # Prototipo de tomografía (extra `ct`, ADR-0010)
     medpseg_python: Path | None = None  # intérprete del entorno de MEDPSeg (make ct-setup)
@@ -74,6 +83,7 @@ class Settings:
             reports_dir=_env_path("NEUMONIA_REPORTS_DIR", base.reports_dir),
             max_upload_mb=_env_float("NEUMONIA_MAX_UPLOAD_MB", base.max_upload_mb),
             api_url=os.environ.get("NEUMONIA_API_URL") or None,
+            cors_origins=_env_list("NEUMONIA_CORS_ORIGINS", base.cors_origins),
             lung_segmenter=os.environ.get("NEUMONIA_LUNG_SEGMENTER", base.lung_segmenter).lower(),
             medpseg_python=(
                 Path(os.environ["NEUMONIA_MEDPSEG_PYTHON"])
