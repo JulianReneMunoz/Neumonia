@@ -43,6 +43,18 @@ Corrida de referencia: `make evaluate` (MLflow, experimento `neumonia-evaluacion
 Se reportan además, en MLflow, la sensibilidad por `sex`, `age_group` y `view_position`.
 Latencia medida en CPU (2 vCPU): ≈ 0.5 s de inferencia + ≈ 0.5 s de Grad-CAM por imagen; carga inicial ≈ 1 s.
 
+### ¿Grad-CAM apunta a la lesión? (ADR-0009, spec 007)
+Contra las cajas de opacidad de los radiólogos de RSNA, en la geometría que ve el modelo (512×512).
+
+| Métrica | Todos los casos con cajas | Clasificados como neumonía | Línea base (azar) |
+|---|---|---|---|
+| Acierto del máximo (*pointing game*) | _pendiente_ (IC 95 %) | _pendiente_ | fracción del área en cajas |
+| Enriquecimiento (energía dentro / área) | _pendiente_ | _pendiente_ | 1.0 |
+| IoU región de alta atención vs. cajas | _pendiente_ | _pendiente_ | — |
+| Casos con alerta de atajo | _pendiente_ | _pendiente_ | — |
+
+Ejecutar `make evaluate-loc` (300 casos, semilla 42) y registrar el `run_id`.
+
 ## Análisis cualitativo (Grad-CAM)
 - En la muestra bacteriana el mapa cubre los campos pulmonares (comportamiento esperado).
 - En `viral (3).dcm` (RSNA, AP, 6 años, placa rotada) el calor se concentra en el **marcador de lateralidad** y

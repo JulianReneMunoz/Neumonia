@@ -10,7 +10,7 @@ WSL_PROJECT   ?= /mnt/c/Neumonia
 .PHONY: help install model data-course dataset-rsna dataset-kermany run api ui grpc proto \
         smoke test test-fast cov lint format check evaluate mlflow docker-build docker-up \
         docker-down docker-smoke hooks grafo memoria memoria-exportar memoria-buscar diagramas clean \
-        seg ui-seg
+        seg ui-seg evaluate-loc
 
 help:  ## Lista los comandos
 	@uv run python -c "import re,sys; [print(f'  make {m[0]:<16} {m[1]}') for m in re.findall(r'^([a-z-]+):.*?## (.*)$$', open('Makefile', encoding='utf-8').read(), re.M)]"
@@ -77,6 +77,9 @@ check:  ## Compuerta local = la de CI: lint + formato + pruebas con cobertura
 
 evaluate: data-course  ## Evalúa el modelo y registra el experimento en MLflow
 	uv run --group mlops python scripts/evaluate.py --metadata data/processed/course_metadata.csv
+
+evaluate-loc: model  ## ¿Grad-CAM apunta a la lesión? Compara con las cajas de RSNA (300 casos)
+	uv run --group mlops python scripts/evaluate_localization.py --limit 300
 
 mlflow:  ## Interfaz de MLflow en http://127.0.0.1:5000
 	uv run --group mlops mlflow ui --backend-store-uri sqlite:///mlflow.db

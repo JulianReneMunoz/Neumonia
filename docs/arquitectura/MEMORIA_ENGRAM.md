@@ -8,10 +8,10 @@ el código; Engram responde **por qué** se decidió así y **qué se descubrió
 | Ruta | Contenido |
 |---|---|
 | `.engram/config.json` | `{"project_name": "neumonia"}`, que fija el proyecto para el CLI y el MCP |
-| `.engram/manifest.json` + `.engram/chunks/*.jsonl.gz` | 20 memorias exportadas (Git Sync, sin *prompts*) |
+| `.engram/manifest.json` + `.engram/chunks/*.jsonl.gz` | 21 memorias exportadas (Git Sync, sin *prompts*) |
 | `scripts/engram_memoria.py` | **Fuente versionada** de las memorias. Se revisa por PR, como el código |
 
-## Las 20 memorias
+## Las 21 memorias
 | Tipo | Topic | Título |
 |---|---|---|
 | architecture | `architecture/mvc-estrategia-dip` | Arquitectura MVC + Estrategia + DIP |
@@ -25,6 +25,7 @@ el código; Engram responde **por qué** se decidió así y **qué se descubrió
 | decision | `decision/metodologias` | Metodologías del proyecto |
 | decision | `decision/hallazgos-3d` | Informe de hallazgos por zonas y vistas 3D (ADR-0007) |
 | decision | `decision/segmentacion-pulmonar` | Segmentación pulmonar PSPNet opcional y aislada (ADR-0008) |
+| decision | `decision/localizacion-rsna` | Grad-CAM contra las cajas de RSNA (ADR-0009) |
 | pattern | `pattern/pruebas-aaa` | Pruebas pytest AAA con dobles |
 | config | `config/preprocesamiento` | NO cambiar el preprocesamiento |
 | config | `config/comandos` | Comandos del proyecto |
@@ -42,7 +43,7 @@ Por eso los objetivos del Makefile llaman al binario de WSL, para que la memoria
 base** que usa el agente y que comparten tus otros proyectos.
 ```powershell
 cd C:\Neumonia
-make memoria                          # importa .engram/chunks al Engram de WSL (20 memorias)
+make memoria                          # importa .engram/chunks al Engram de WSL (21 memorias)
 make memoria-buscar Q="umbral"        # buscar
 make memoria-exportar                 # tras editar scripts/engram_memoria.py: guarda y exporta a .engram/
 ```

@@ -37,6 +37,7 @@ probada, contenerizada y desplegable en CPU, con un contrato de API estable.
 | HU-04 | Errores claros | `InvalidImageError` → 422, manejador global → 500 |
 | HU-05 | Metadatos sin PHI | `model/metadata.py` (lista blanca) |
 | HU-06 | Evaluar y comparar | `evaluation.py`, `tracking/`, MLflow |
+| HU-10 | Medir si Grad-CAM apunta a la lesión | `evaluation_localization.py`, cajas RSNA, MLflow |
 | HU-07 | Desplegar con compuertas | `docker/`, `.gitlab-ci.yml` |
 | HU-08 | gRPC | `grpc_api/` |
 
@@ -44,7 +45,7 @@ probada, contenerizada y desplegable en CPU, con un contrato de API estable.
 | Atributo | Escenario | Táctica | Evidencia |
 |---|---|---|---|
 | **Mantenibilidad / modificabilidad** | Cambiar el modelo por ONNX sin tocar la API | Protocolos + raíz de composición (DIP) | `Classifier`, `factory.py`, ADR-0001 |
-| **Testabilidad** | Probar el controlador sin cargar 118 MB | Dobles de prueba inyectados | 367 de 377 pruebas sin el modelo real |
+| **Testabilidad** | Probar el controlador sin cargar 118 MB | Dobles de prueba inyectados | 382 de 392 pruebas sin el modelo real |
 | **Conformidad arquitectónica** | La vista nunca importa el modelo | *Fitness function* en CI | `tests/test_architecture.py`; graphify: Vista→Modelo = 0 aristas |
 | **Interoperabilidad** | Un cliente nuevo usa `/predict` sin leer el código | Contract-first OpenAPI + gRPC | `api/openapi.yaml`, `neumonia.proto` |
 | **Rendimiento** | p95 de `/predict` < 3 s en 2 vCPU | Carga única del modelo (`lru_cache`), TF importado de forma perezosa, Grad-CAM opcional en lotes | `X-Process-Time-ms`; ≈1 s por imagen |
@@ -152,6 +153,7 @@ El grafo (1 025 nodos, 1 926 aristas, **sin ciclos de importación**) confirma c
 | [0006](../adr/0006-mlflow-sqlite.md) | MLflow con SQLite | File store (en mantenimiento) |
 | [0007](../adr/0007-hallazgos-por-zonas-y-vista-3d.md) | Hallazgos por zonas + vistas 3D de la atención (aditivo) | Segmentación U-Net; detector RSNA; reconstrucción 2D→3D |
 | [0008](../adr/0008-segmentacion-pulmonar-pspnet.md) | Segmentación pulmonar PSPNet opcional, en proceso aparte, con respaldo geométrico | SAM 3 con texto; U-Net propia |
+| [0009](../adr/0009-metricas-localizacion-gradcam.md) | Medir Grad-CAM contra las cajas de RSNA (*pointing game*, enriquecimiento, IoU) | Solo inspección visual; Dice sin máscaras |
 
 Las mismas decisiones viven en la memoria Engram (`engram search "decision" --project neumonia`).
 
@@ -168,7 +170,7 @@ Las mismas decisiones viven en la memoria Engram (`engram search "decision" --pr
 ## 6. Estrategia de pruebas
 Pirámide: unitarias (lectores, metadatos, decisión, métricas) → integración (API, gRPC, Keras mínimo, MLflow) →
 extremo a extremo (modelo real, `smoke_infer.py`, `container_smoke.py`) → arquitectura (`test_architecture.py`).
-En total son 377 pruebas, con 98 % de cobertura y una compuerta de 80 %. Mapa completo: `tests/README.md`.
+En total son 392 pruebas, con 98 % de cobertura y una compuerta de 80 %. Mapa completo: `tests/README.md`.
 
 ## 7. Riesgos técnicos y deuda conocida
 | Riesgo / deuda | Impacto en el diseño | Plan |

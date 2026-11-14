@@ -1,6 +1,14 @@
 # Changelog
 Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) · [SemVer](https://semver.org/lang/es/).
 
+## [0.6.0] — sin publicar · ¿Grad-CAM apunta a la lesión? (fase 2)
+### Agregado
+- `evaluation_localization.py` + `scripts/evaluate_localization.py` + `make evaluate-loc`: compara Grad-CAM con
+  las cajas de radiólogos de RSNA (*pointing game* con IC de Wilson, enriquecimiento frente al azar, IoU),
+  global y para los casos clasificados como neumonía; CSV por caso y registro en MLflow — ADR-0009, spec 007.
+- Acepta el CSV de Kaggle (patientId) o la exportación adjudicada de RSNA (SOPInstanceUID) y busca los DICOM en subcarpetas.
+- 15 pruebas nuevas con mapas y cajas sintéticos (392 en total). Falta la corrida con RSNA.
+
 ## [0.5.0] — sin publicar · Segmentación pulmonar real (fase 1)
 ### Agregado
 - Estrategia `LungSegmenter`: zonas geométricas (por defecto) o **PSPNet de TorchXRayVision** (extra opcional

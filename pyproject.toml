@@ -1,6 +1,6 @@
 [project]
 name = "neumonia"
-version = "0.5.0"
+version = "0.6.0"
 description = "Apoyo al diagnóstico de neumonía en radiografías de tórax (Keras/TF + Grad-CAM) — caso base GPIA UAO 2026-2S"
 readme = "README.md"
 requires-python = "==3.13.*"
