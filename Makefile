@@ -10,7 +10,7 @@ WSL_PROJECT   ?= /mnt/c/Neumonia
 .PHONY: help install model data-course dataset-rsna dataset-kermany run api ui grpc proto \
         smoke test test-fast cov lint format check evaluate mlflow docker-build docker-up \
         docker-down docker-smoke hooks grafo memoria memoria-exportar memoria-buscar diagramas clean \
-        seg ui-seg evaluate-loc ct-setup ct-precompute ui-ct backend frontend mlflow-runs
+        seg ui-seg evaluate-loc ct-setup ct-precompute ui-ct backend frontend mlflow-runs kanban
 
 help:  ## Lista los comandos
 	@uv run python -c "import re,sys; [print(f'  make {m[0]:<16} {m[1]}') for m in re.findall(r'^([a-z-]+):.*?## (.*)$$', open('Makefile', encoding='utf-8').read(), re.M)]"
@@ -126,6 +126,9 @@ memoria-exportar:  ## Guarda/actualiza scripts/engram_memoria.py en Engram (WSL)
 
 memoria-buscar:  ## Busca en la memoria del proyecto: make memoria-buscar Q="umbral"
 	wsl -d $(ENGRAM_DISTRO) -e $(ENGRAM_BIN) search "$(Q)" --project neumonia
+
+kanban:  ## Regenera docs/kanban.md desde el tablero de GitHub Projects (SPEC-019)
+	uv run python scripts/kanban_snapshot.py
 
 diagramas:  ## Exporta los diagramas Mermaid de docs/arquitectura a SVG (requiere Node.js)
 	uv run python scripts/render_diagramas.py
