@@ -17,6 +17,7 @@ from neumonia.domain import Prediction, RadiographImage
 from neumonia.model.classifier import Classifier
 from neumonia.model.gradcam import Explainer, overlay_heatmap
 from neumonia.model.localization import analyze_attention
+from neumonia.model.lung_segmentation import GeometricLungSegmenter, LungSegmenter
 from neumonia.model.preprocessing import preprocess
 from neumonia.model.readers import DEFAULT_READERS, ImageReader, read_image
 
@@ -28,11 +29,13 @@ class PneumoniaService:
         explainer: Explainer | Callable[[], Explainer] | None = None,
         policy: DecisionPolicy | None = None,
         readers: tuple[ImageReader, ...] = DEFAULT_READERS,
+        segmenter: LungSegmenter | None = None,
     ) -> None:
         self.classifier = classifier
         self._explainer = explainer
         self.policy = policy or ThresholdPolicy()
         self.readers = readers
+        self.segmenter = segmenter or GeometricLungSegmenter()
 
     @property
     def explainer(self) -> Explainer | None:
@@ -52,8 +55,12 @@ class PneumoniaService:
         if explainer is not None:
             cam = explainer.explain(batch, decision.target_index)
             heatmap = overlay_heatmap(cam, image.pixels)
+            lungs = self.segmenter.segment(image.pixels)
             findings = with_summary(
-                analyze_attention(cam), decision.label, decision.probability, decision.subtype
+                analyze_attention(cam, lungs=lungs),
+                decision.label,
+                decision.probability,
+                decision.subtype,
             )
         return Prediction(
             label=decision.label,

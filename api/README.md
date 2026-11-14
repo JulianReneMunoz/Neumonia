@@ -38,7 +38,10 @@ El formato se detecta por la **firma binaria** del archivo y, si no la hay, por 
     "outside_inside_ratio": 1.04,
     "shortcut_warning": true,
     "attention_grid": [[0.0, "…31×31…"]],
-    "summary": ["El modelo sugiere hallazgos compatibles con neumonía de probable patrón viral (probabilidad 99.2%).", "…"]
+    "summary": ["El modelo sugiere hallazgos compatibles con neumonía de probable patrón viral (probabilidad 99.2%).", "…"],
+    "lung_source": "geometrica",
+    "lung_note": "Segmentación pspnet descartada: un pulmón ocupa solo el 2 % de la imagen (…). Se usan zonas geométricas.",
+    "lung_grid": [[0, "…64×64…"]]
   }
 }
 ```
@@ -51,6 +54,9 @@ El formato se detecta por la **firma binaria** del archivo y, si no la hay, por 
   aproximadas (ADR-0007, spec 005). `derecho`/`izquierdo` se refieren al **paciente** (convención radiológica).
   Describe la **atención del modelo**, no la ubicación de lesiones. `shortcut_warning = true` cuando el modelo
   mira tanto o más fuera de los pulmones que dentro.
+- `findings.lung_source` / `lung_note` / `lung_grid` (v0.5.0, aditivos): si las zonas salen de la silueta
+  segmentada con PSPNet (`NEUMONIA_LUNG_SEGMENTER=pspnet`, ADR-0008) o de rectángulos geométricos, por qué
+  se usó el respaldo, y la máscara 64×64 para dibujarla.
 
 ## Reglas
 - `Content-Type: application/json` en todas las respuestas JSON.

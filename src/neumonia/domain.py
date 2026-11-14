@@ -39,6 +39,42 @@ ZONE_NAMES: tuple[str, ...] = (
 )
 
 
+LUNG_SOURCES: tuple[str, ...] = ("geometrica", "pspnet")
+
+
+@dataclass(frozen=True)
+class LungMasks:
+    """Campos pulmonares en coordenadas de la imagen (bool, size×size).
+
+    `right` es el pulmón **derecho del paciente** (a la izquierda de la imagen en una PA/AP).
+    `source` dice de dónde salen: `geometrica` (rectángulos aproximados) o `pspnet`
+    (segmentación TorchXRayVision). `note` explica un respaldo o una advertencia de calidad.
+    """
+
+    right: np.ndarray
+    left: np.ndarray
+    source: str = "geometrica"
+    note: str = ""
+
+    def __post_init__(self) -> None:
+        if self.right.shape != self.left.shape or self.right.ndim != 2:
+            raise ValueError("right y left deben ser máscaras 2D de la misma forma.")
+        if self.source not in LUNG_SOURCES:
+            raise ValueError(f"source debe ser uno de {LUNG_SOURCES}.")
+
+    @property
+    def lung_field(self) -> np.ndarray:
+        return self.right | self.left
+
+    def label_grid(self, size: int = 64) -> list[list[int]]:
+        """Rejilla reducida para la vista: 0 = fuera, 1 = pulmón derecho, 2 = pulmón izquierdo."""
+        h, w = self.right.shape
+        rows = (np.arange(size) * h // size)[:, None]
+        cols = (np.arange(size) * w // size)[None, :]
+        grid = np.where(self.right[rows, cols], 1, np.where(self.left[rows, cols], 2, 0))
+        return grid.astype(int).tolist()
+
+
 @dataclass(frozen=True)
 class Findings:
     """Hallazgos derivados del mapa de atención (Grad-CAM) — NO es una segmentación de lesiones.
@@ -57,6 +93,9 @@ class Findings:
     attention_grid: list[list[float]]  # Grad-CAM a su resolución nativa (31×31), en [0, 1]
     outside_inside_ratio: float = 0.0  # densidad de atención fuera / dentro (1.0 = uniforme)
     summary: list[str] = field(default_factory=list)
+    lung_source: str = "geometrica"  # geometrica | pspnet
+    lung_note: str = ""  # motivo del respaldo geométrico o advertencia de la segmentación
+    lung_grid: list[list[int]] = field(default_factory=list)  # 64×64: 0 fuera, 1 der., 2 izq.
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -69,6 +108,9 @@ class Findings:
             "outside_inside_ratio": round(float(self.outside_inside_ratio), 3),
             "attention_grid": [[round(float(v), 3) for v in row] for row in self.attention_grid],
             "summary": list(self.summary),
+            "lung_source": self.lung_source,
+            "lung_note": self.lung_note,
+            "lung_grid": [list(map(int, row)) for row in self.lung_grid],
         }
 
     @classmethod
@@ -83,6 +125,9 @@ class Findings:
             outside_inside_ratio=float(data.get("outside_inside_ratio", 0.0)),
             attention_grid=[[float(v) for v in row] for row in data.get("attention_grid", [])],
             summary=[str(s) for s in data.get("summary", [])],
+            lung_source=str(data.get("lung_source", "geometrica")),
+            lung_note=str(data.get("lung_note", "")),
+            lung_grid=[[int(v) for v in row] for row in data.get("lung_grid", [])],
         )
 
 

@@ -1,6 +1,16 @@
 # Changelog
 Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) · [SemVer](https://semver.org/lang/es/).
 
+## [0.5.0] — sin publicar · Segmentación pulmonar real (fase 1)
+### Agregado
+- Estrategia `LungSegmenter`: zonas geométricas (por defecto) o **PSPNet de TorchXRayVision** (extra opcional
+  `seg`, `make seg`, `NEUMONIA_LUNG_SEGMENTER=pspnet`, `make ui-seg`) — ADR-0008, spec 006.
+- Control de calidad con respaldo geométrico y nota en el informe; pesos verificados con SHA-256.
+- PSPNet corre en un proceso hijo (`neumonia.model.lung_worker`): TensorFlow y PyTorch no conviven en un proceso.
+- Zonas en tercios de la altura de cada pulmón; `findings.lung_source`, `lung_note`, `lung_grid` (aditivos).
+- La pestaña *Informe detallado* dibuja los pulmones, sus tercios y la zona dominante sobre la radiografía.
+- Reglas de arquitectura: PyTorch solo perezoso y nunca en vista ni controlador. 37 pruebas nuevas (377).
+
 ## [0.4.0] — sin publicar · Informe de hallazgos y vistas 3D
 ### Agregado
 - Informe de hallazgos asistido: atención del modelo por 6 zonas pulmonares aproximadas, lateralidad,

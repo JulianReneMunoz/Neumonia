@@ -44,7 +44,7 @@ probada, contenerizada y desplegable en CPU, con un contrato de API estable.
 | Atributo | Escenario | Táctica | Evidencia |
 |---|---|---|---|
 | **Mantenibilidad / modificabilidad** | Cambiar el modelo por ONNX sin tocar la API | Protocolos + raíz de composición (DIP) | `Classifier`, `factory.py`, ADR-0001 |
-| **Testabilidad** | Probar el controlador sin cargar 118 MB | Dobles de prueba inyectados | 331 de 340 pruebas sin el modelo real |
+| **Testabilidad** | Probar el controlador sin cargar 118 MB | Dobles de prueba inyectados | 367 de 377 pruebas sin el modelo real |
 | **Conformidad arquitectónica** | La vista nunca importa el modelo | *Fitness function* en CI | `tests/test_architecture.py`; graphify: Vista→Modelo = 0 aristas |
 | **Interoperabilidad** | Un cliente nuevo usa `/predict` sin leer el código | Contract-first OpenAPI + gRPC | `api/openapi.yaml`, `neumonia.proto` |
 | **Rendimiento** | p95 de `/predict` < 3 s en 2 vCPU | Carga única del modelo (`lru_cache`), TF importado de forma perezosa, Grad-CAM opcional en lotes | `X-Process-Time-ms`; ≈1 s por imagen |
@@ -92,6 +92,9 @@ Actores: médico, sistemas clínicos (REST/gRPC) y equipo. Dependencias externas
 | Modelo | `model/classifier.py` | Adaptar Keras | Adaptador (DIP) |
 | Modelo | `model/gradcam.py` | Grad-CAM y superposición | Adaptador (DIP) |
 | Modelo | `model/localization.py` | Atención por 6 zonas, lateralidad, extensión, alerta de atajo | Función pura (numpy/cv2) |
+| Modelo | `model/lung_segmentation.py` | Campos pulmonares: geométricos o PSPNet, control de calidad con respaldo | Estrategia + Decorador |
+| Modelo | `model/lung_worker.py` | Proceso hijo con PyTorch (TF y PyTorch no conviven) | Aislamiento de proceso |
+| Vista | `view/overlays.py` | Pulmones, tercios y zona dominante sobre la radiografía | Función pura (numpy) |
 | Controlador | `controller/findings.py` | Redacción prudente del informe de hallazgos | Regla de negocio |
 | Vista | `view/visual3d.py` | Relieve 3D de Grad-CAM y esquema pulmonar 3D (Plotly) | Funciones puras, sin TF |
 | Adaptadores | `api/app.py`, `grpc_api/server.py` | Exponer el controlador por red | Adaptador |
@@ -148,6 +151,7 @@ El grafo (1 025 nodos, 1 926 aristas, **sin ciclos de importación**) confirma c
 | [0005](../adr/0005-ui-api-gateway.md) | Streamlit + FastAPI + gRPC con pasarela | Tkinter con capturas |
 | [0006](../adr/0006-mlflow-sqlite.md) | MLflow con SQLite | File store (en mantenimiento) |
 | [0007](../adr/0007-hallazgos-por-zonas-y-vista-3d.md) | Hallazgos por zonas + vistas 3D de la atención (aditivo) | Segmentación U-Net; detector RSNA; reconstrucción 2D→3D |
+| [0008](../adr/0008-segmentacion-pulmonar-pspnet.md) | Segmentación pulmonar PSPNet opcional, en proceso aparte, con respaldo geométrico | SAM 3 con texto; U-Net propia |
 
 Las mismas decisiones viven en la memoria Engram (`engram search "decision" --project neumonia`).
 
@@ -156,7 +160,7 @@ Las mismas decisiones viven en la memoria Engram (`engram search "decision" --pr
 |---|---|
 | REST | `api/openapi.yaml` — `GET /health`, `POST /predict`, `GET /static/gradcam/{id}.png` |
 | gRPC | `src/neumonia/grpc_api/neumonia.proto` — `Predict`, `Health` |
-| Configuración | `NEUMONIA_MODEL_PATH`, `NEUMONIA_THRESHOLD`, `NEUMONIA_API_URL`, `NEUMONIA_MAX_UPLOAD_MB`, `NEUMONIA_STATIC_DIR`, `NEUMONIA_HISTORY_PATH`, `MLFLOW_TRACKING_URI` |
+| Configuración | `NEUMONIA_MODEL_PATH`, `NEUMONIA_THRESHOLD`, `NEUMONIA_API_URL`, `NEUMONIA_MAX_UPLOAD_MB`, `NEUMONIA_LUNG_SEGMENTER`, `NEUMONIA_STATIC_DIR`, `NEUMONIA_HISTORY_PATH`, `MLFLOW_TRACKING_URI` |
 | Datos | `data/processed/<fuente>_metadata.csv` (columnas en `docs/dataset.md`) |
 | Hallazgos | `findings` en `/predict` (ADR-0007, spec 005), sección del PDF y pestañas *Informe detallado* / *Vista 3D* |
 | Artefactos | `artifacts/model/conv_MLP_84.h5` (SHA-256 fijo), `runtime/` (salidas) |
@@ -164,12 +168,13 @@ Las mismas decisiones viven en la memoria Engram (`engram search "decision" --pr
 ## 6. Estrategia de pruebas
 Pirámide: unitarias (lectores, metadatos, decisión, métricas) → integración (API, gRPC, Keras mínimo, MLflow) →
 extremo a extremo (modelo real, `smoke_infer.py`, `container_smoke.py`) → arquitectura (`test_architecture.py`).
-En total son 340 pruebas, con 99 % de cobertura y una compuerta de 80 %. Mapa completo: `tests/README.md`.
+En total son 377 pruebas, con 98 % de cobertura y una compuerta de 80 %. Mapa completo: `tests/README.md`.
 
 ## 7. Riesgos técnicos y deuda conocida
 | Riesgo / deuda | Impacto en el diseño | Plan |
 |---|---|---|
 | Atajos del modelo (Grad-CAM en marcadores y bordes) | El diseño no puede corregirlo: es del modelo | Recorte pulmonar como nueva Estrategia de preprocesamiento opcional |
+| TensorFlow y PyTorch en el mismo proceso abortan (LLVM) | PSPNet debe ir aparte | Proceso hijo `lung_worker`; regla de arquitectura que exige importar PyTorch de forma perezosa |
 | Probabilidades no calibradas | `probability` no es una frecuencia | `CalibratedClassifier` que envuelva a `Classifier` (decorador) |
 | Imagen Docker de ~1.8 GB | Despliegues lentos | Exportar a ONNX + `onnxruntime` (otra implementación de `Classifier`) |
 | SQLite en MLflow | No concurrente | PostgreSQL sin cambiar código (`MLFLOW_TRACKING_URI`) |

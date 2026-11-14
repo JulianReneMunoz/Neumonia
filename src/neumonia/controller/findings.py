@@ -57,10 +57,18 @@ def describe(findings: Findings, label: Label, probability: float, subtype: str)
             f"{LATERALITY_LABELS.get(findings.laterality, findings.laterality)}."
         )
     if findings.dominant_zone:
+        area = "segmentada" if findings.lung_source == "pspnet" else "aproximada"
         lines.append(
             "Extensión estimada de la región de alta atención: "
-            f"{findings.extent_pct:.0f} % del área pulmonar aproximada."
+            f"{findings.extent_pct:.0f} % del área pulmonar {area}."
         )
+    if findings.lung_source == "pspnet":
+        lines.append(
+            "Zonas calculadas sobre la silueta pulmonar segmentada automáticamente "
+            "(PSPNet, TorchXRayVision); revise que el contorno coincida con los pulmones."
+        )
+    elif findings.lung_note:
+        lines.append(findings.lung_note)
     if findings.shortcut_warning:
         lines.append(
             "Advertencia de calidad: el modelo atiende tanto o más fuera de los campos pulmonares "

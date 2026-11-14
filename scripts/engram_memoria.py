@@ -171,6 +171,16 @@ MEMORIAS: list[tuple[str, str, str, str]] = [
         "de los pulmones >= 1.0 (tope 99). Vistas 3D Plotly: relieve de atencion y esquema no anatomico. "
         "No es segmentacion ni reconstruccion 3D (la radiografia es 2D). Campo aditivo findings en /predict.",
     ),
+    (
+        "decision",
+        "decision/segmentacion-pulmonar",
+        "Segmentacion pulmonar PSPNet opcional y aislada (ADR-0008)",
+        "LungSegmenter: geometrica por defecto o PSPNet de TorchXRayVision (extra seg, make seg, "
+        "NEUMONIA_LUNG_SEGMENTER=pspnet). Control de calidad (cada pulmon >= 4 %, ambos >= 12 %, lados "
+        "correctos) con respaldo geometrico y nota. PSPNet en proceso hijo lung_worker: TensorFlow y "
+        "torchvision/triton abortan juntos (LLVM). Nunca importar torch en el proceso principal ni con "
+        "importorskip. Pesos SHA-256 019b167e. La consolidacion densa queda fuera de la mascara.",
+    ),
 ]
 
 

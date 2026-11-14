@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Neumonía — Inference API
-  version: 0.4.0
+  version: 0.5.0
   description: |
     Contrato de inferencia del caso Neumonía (Keras/TF + Grad-CAM).
     Las claves `label`, `probability` y `gradcam_url` son el contrato mínimo del curso y no cambian
@@ -61,6 +61,9 @@ paths:
                   shortcut_warning: true
                   attention_grid: [[0.0, 0.1], [0.2, 0.3]]
                   summary: ["El modelo sugiere hallazgos compatibles con neumonía de probable patrón viral (probabilidad 99.2%)."]
+                  lung_source: geometrica
+                  lung_note: "Segmentación pspnet descartada: un pulmón ocupa solo el 2 % de la imagen (...). Se usan zonas geométricas."
+                  lung_grid: [[0, 0], [1, 2]]
         '422':
           description: Entrada inválida (vacía, corrupta, formato no soportado o demasiado grande)
           content:
@@ -145,6 +148,15 @@ components:
           type: array
           items: {type: string}
           description: Frases del informe en español, con la nota de limitación al final
+        lung_source:
+          type: string
+          enum: [geometrica, pspnet]
+          description: "Origen de las zonas: rectángulos aproximados o silueta segmentada (ADR-0008)"
+        lung_note: {type: string, description: "Motivo del respaldo geométrico; vacío si no hubo"}
+        lung_grid:
+          type: array
+          description: "Máscara 64×64: 0 fuera, 1 pulmón derecho del paciente, 2 pulmón izquierdo"
+          items: {type: array, items: {type: integer, enum: [0, 1, 2]}}
     Error:
       type: object
       required: [error]

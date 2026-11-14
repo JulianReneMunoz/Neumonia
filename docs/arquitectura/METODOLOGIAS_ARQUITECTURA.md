@@ -143,7 +143,7 @@ Formato: **Elemento** · **Cómo lo moldea** · **Evidencia** · **graphify** (n
   estructura misma.
 - **Cómo lo moldea**: la arquitectura se diseñó para ser **probable**. Por eso existen los dobles inyectables, la importación
   perezosa de TensorFlow y la red Keras mínima `tiny_keras_model`.
-- **Evidencia**: 340 pruebas, 99 % de cobertura; compuerta en el diagrama 08.
+- **Evidencia**: 377 pruebas, 98 % de cobertura; compuerta en el diagrama 08.
 - **graphify**: `FakeClassifier` y `FakeExplainer` están entre los 10 nodos más conectados, porque la testabilidad es
   un eje del grafo.
 - **Engram**: `pattern/pruebas-aaa`.

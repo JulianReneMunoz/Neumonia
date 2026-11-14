@@ -80,6 +80,12 @@ LATERALITY_DISPLAY = {
 }
 
 
+SEGMENTATION_DISPLAY = {
+    "pspnet": "Silueta pulmonar segmentada (PSPNet)",
+    "geometrica": "Zonas geométricas aproximadas",
+}
+
+
 @dataclass(frozen=True)
 class FindingsView:
     summary: list[str]
@@ -88,6 +94,8 @@ class FindingsView:
     extent: str
     outside: str
     shortcut_warning: bool
+    segmentation: str = ""
+    segmentation_note: str = ""
 
 
 def present_findings(findings: Findings) -> FindingsView:
@@ -105,4 +113,6 @@ def present_findings(findings: Findings) -> FindingsView:
         extent=f"{findings.extent_pct:.0f} %",
         outside=f"{findings.out_of_lung_pct:.0f} % (razón {findings.outside_inside_ratio:.2f})",
         shortcut_warning=findings.shortcut_warning,
+        segmentation=SEGMENTATION_DISPLAY.get(findings.lung_source, findings.lung_source),
+        segmentation_note=findings.lung_note,
     )

@@ -22,8 +22,15 @@ FORBIDDEN = {
         "streamlit",
         "fastapi",
     ),
-    "view": ("neumonia.model", "tensorflow", "cv2", "fastapi"),
-    "controller": ("neumonia.view", "neumonia.api", "neumonia.grpc_api", "streamlit", "fastapi"),
+    "view": ("neumonia.model", "tensorflow", "cv2", "fastapi", "torch"),
+    "controller": (
+        "neumonia.view",
+        "neumonia.api",
+        "neumonia.grpc_api",
+        "streamlit",
+        "fastapi",
+        "torch",
+    ),
     "api": ("neumonia.view", "streamlit"),
     "grpc_api": ("neumonia.view", "streamlit", "fastapi"),
 }
@@ -49,14 +56,16 @@ def test_layer_does_not_import_forbidden_modules(layer, path):
     assert not bad, f"{layer}/{path.name} importa {bad}"
 
 
-def test_tensorflow_is_imported_lazily():
-    """TensorFlow solo se importa dentro de funciones (arranque rápido de la API y las pruebas)."""
+@pytest.mark.parametrize("heavy", ["tensorflow", "torch", "torchxrayvision"])
+def test_heavy_frameworks_are_imported_lazily(heavy):
+    """TF y PyTorch solo se importan dentro de funciones: arranque rápido de la API y las pruebas,
+    y PyTorch nunca se carga junto a TensorFlow (va en el proceso hijo, ADR-0008)."""
     for path in SRC.rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         top_level = [n for n in tree.body if isinstance(n, ast.Import | ast.ImportFrom)]
         for node in top_level:
             module = node.module if isinstance(node, ast.ImportFrom) else node.names[0].name
-            assert not (module or "").startswith("tensorflow"), f"{path.name} importa TF al cargar"
+            assert (module or "").split(".")[0] != heavy, f"{path.name} importa {heavy}"
 
 
 @pytest.mark.parametrize(

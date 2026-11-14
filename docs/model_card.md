@@ -61,6 +61,9 @@ Latencia medida en CPU (2 vCPU): ≈ 0.5 s de inferencia + ≈ 0.5 s de Grad-CAM
    segmentación de lesiones ni una reconstrucción anatómica (una radiografía es 2D), y las zonas son geométricas
    aproximadas (menos exactas en placas rotadas o recortadas). La alerta de atajo (razón de densidad fuera/dentro
    ≥ 1.0) se activa en 3 de las 5 muestras del curso, entre ellas `viral (3).dcm` (1.04).
+   Con la **segmentación pulmonar opcional** (v0.5.0, ADR-0008, PSPNet de TorchXRayVision) las zonas siguen la
+   silueta real; en 4 de 5 muestras supera el control de calidad. La consolidación densa tiende a quedar fuera
+   de la máscara: en `viral (3).dcm` se descarta y se usan zonas geométricas, y el informe lo indica.
 5. **Privacidad**: el sistema descarta PatientID/PatientName y no los registra; el documento del paciente
    solo se guarda en el historial local si el médico lo decide.
 6. **Supervisión humana**: toda salida va acompañada del aviso "no reemplaza el criterio de un profesional".

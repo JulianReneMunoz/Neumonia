@@ -7,4 +7,4 @@ Capas:
 - `neumonia.api` / `neumonia.grpc_api` → Adaptadores de entrega (REST y gRPC).
 """
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
