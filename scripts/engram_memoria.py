@@ -190,6 +190,15 @@ MEMORIAS: list[tuple[str, str, str, str]] = [
         "(1.0 = azar) e IoU de la region >= 0.5. Reportar global y tp_ (clasificados neumonia). Cajas "
         "reescaladas a 512 sin recorte. Cifras pendientes en la Model Card hasta tener RSNA.",
     ),
+    (
+        "decision",
+        "decision/prototipo-tomografia",
+        "Prototipo de tomografia 3D con MEDPSeg (ADR-0010)",
+        "Radiografia = 2D, no hay 3D real; con CT si. MEDPSeg (MIT, commit 1e6617dc, pesos SHA b0890cd4) "
+        "en .medpseg/env, invocado como proceso externo con medpseg_runner.py (medpseg_cpu importa "
+        "Tkinter). Remuestreo 1.5 mm; ~7 s/corte en 2 nucleos CPU. Lobulos: 1 LUL 2 LLL 3 RUL 4 RML 5 RLL. "
+        "Severidad 0-5 por lobulo (0-25). Cache npz para demo instantanea: make ct-precompute + make ui-ct.",
+    ),
 ]
 
 

@@ -55,6 +55,10 @@ class Settings:
     max_gradcam_files: int = 200
     api_url: str | None = None
     lung_segmenter: str = "geometrica"  # geometrica | pspnet (extra `seg`, ADR-0008)
+    # Prototipo de tomografía (extra `ct`, ADR-0010)
+    medpseg_python: Path | None = None  # intérprete del entorno de MEDPSeg (make ct-setup)
+    ct_cache_dir: Path = field(default_factory=lambda: PROJECT_ROOT / "runtime" / "ct_cache")
+    ct_work_dir: Path = field(default_factory=lambda: PROJECT_ROOT / "runtime" / "ct_work")
     mlflow_tracking_uri: str = (
         "sqlite:///mlflow.db"  # MLflow 3: el file store está en mantenimiento
     )
@@ -71,6 +75,12 @@ class Settings:
             max_upload_mb=_env_float("NEUMONIA_MAX_UPLOAD_MB", base.max_upload_mb),
             api_url=os.environ.get("NEUMONIA_API_URL") or None,
             lung_segmenter=os.environ.get("NEUMONIA_LUNG_SEGMENTER", base.lung_segmenter).lower(),
+            medpseg_python=(
+                Path(os.environ["NEUMONIA_MEDPSEG_PYTHON"])
+                if os.environ.get("NEUMONIA_MEDPSEG_PYTHON")
+                else None
+            ),
+            ct_cache_dir=_env_path("NEUMONIA_CT_CACHE_DIR", base.ct_cache_dir),
             mlflow_tracking_uri=os.environ.get("MLFLOW_TRACKING_URI", base.mlflow_tracking_uri),
         )
 

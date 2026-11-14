@@ -1,6 +1,16 @@
 # Changelog
 Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) · [SemVer](https://semver.org/lang/es/).
 
+## [0.7.0] — sin publicar · Prototipo de tomografía 3D (experimental)
+### Agregado
+- App separada `make ui-ct` (puerto 8502): reconstrucción 3D **real** de pulmones, vía aérea, arterias
+  pulmonares, vidrio esmerilado y consolidación a partir de una tomografía; cortes axial/coronal; informe con
+  % comprometido por pulmón y lóbulo y puntaje de severidad tomográfica (0–25) — ADR-0010, spec 008.
+- MEDPSeg (MIT) en su propio entorno (`make ct-setup`, commit fijo, pesos con SHA-256), invocado como proceso
+  externo sin GUI; remuestreo a 1.5 mm para CPU; caché por caso para demos instantáneas (`make ct-precompute`).
+- Extra liviano `ct` (nibabel, scikit-image) incluido en `make install` y en CI. 32 pruebas nuevas (432).
+- Verificado con una tomografía real: 29 min en CPU (2 núcleos), volúmenes iguales al informe de MEDPSeg.
+
 ## [0.6.0] — sin publicar · ¿Grad-CAM apunta a la lesión? (fase 2)
 ### Agregado
 - `evaluation_localization.py` + `scripts/evaluate_localization.py` + `make evaluate-loc`: compara Grad-CAM con

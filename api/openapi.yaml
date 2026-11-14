@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Neumonía — Inference API
-  version: 0.6.0
+  version: 0.7.0
   description: |
     Contrato de inferencia del caso Neumonía (Keras/TF + Grad-CAM).
     Las claves `label`, `probability` y `gradcam_url` son el contrato mínimo del curso y no cambian

@@ -1,6 +1,6 @@
 # Pruebas — Neumonía
 
-**392 pruebas · cobertura 98 % · patrón AAA.** `make test` (todas) · `make test-fast` (sin modelo real ni lentas, ~15 s) · `make cov`.
+**432 pruebas · cobertura 98 % · patrón AAA.** `make test` (todas) · `make test-fast` (sin modelo real ni lentas, ~15 s) · `make cov`.
 
 ## Smoke tests exigidos por el curso
 | Requisito (`tests/README` original) | Prueba |
@@ -25,6 +25,7 @@
 | `test_hallazgos_3d.py` | Zonas pulmonares, lateralidad, alerta de atajo, informe, `findings` en API/PDF/pasarela, figuras 3D (spec 005) |
 | `test_segmentacion_pulmonar.py` | Segmentación PSPNet con dobles, control de calidad y respaldo, proceso aislado, zonas por silueta, superposición en la vista (spec 006) |
 | `test_localizacion_rsna.py` | Grad-CAM vs. cajas de RSNA: máscara, *pointing game*, enriquecimiento, IoU, IC de Wilson, extremo a extremo (spec 007) |
+| `test_tomografia.py` | Prototipo de tomografía: lectura de MEDPSeg (RAS+), proceso externo simulado, informe y severidad por lóbulo, mallas, caché, vistas 3D y cortes (spec 008) |
 | `test_streamlit_view.py` | Render de la UI con `AppTest` |
 | `test_evaluation_and_data.py` | Métricas/AUC, RSNA, muestreo estratificado, MLflow, descarga con SHA |
 | `test_architecture.py` | Reglas MVC (*fitness functions*) |

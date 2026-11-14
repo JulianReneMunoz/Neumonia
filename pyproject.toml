@@ -1,6 +1,6 @@
 [project]
 name = "neumonia"
-version = "0.6.0"
+version = "0.7.0"
 description = "Apoyo al diagnóstico de neumonía en radiografías de tórax (Keras/TF + Grad-CAM) — caso base GPIA UAO 2026-2S"
 readme = "README.md"
 requires-python = "==3.13.*"
@@ -29,6 +29,12 @@ dependencies = [
 # Instalar con `make seg` (o `uv sync --all-groups --extra seg`).
 seg = [
     "torchxrayvision>=1.5",
+]
+# Prototipo de tomografía (ADR-0010): lectura NIfTI y mallas 3D. MEDPSeg va en su propio entorno
+# (make ct-setup) y se invoca como proceso externo; aquí no se instala PyTorch.
+ct = [
+    "nibabel>=5.3",
+    "scikit-image>=0.24",
 ]
 
 [project.scripts]
@@ -71,7 +77,7 @@ filterwarnings = [
 
 [tool.coverage.run]
 source = ["src/neumonia"]
-omit = ["src/neumonia/grpc_api/neumonia_pb2*.py", "src/neumonia/view/streamlit_app.py"]
+omit = ["src/neumonia/grpc_api/neumonia_pb2*.py", "src/neumonia/view/streamlit_app.py", "src/neumonia/view/ct_app.py"]
 
 [tool.coverage.report]
 show_missing = true

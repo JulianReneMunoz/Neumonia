@@ -1382,7 +1382,7 @@ wheels = [
 
 [[package]]
 name = "neumonia"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -1403,6 +1403,10 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+ct = [
+    { name = "nibabel" },
+    { name = "scikit-image" },
+]
 seg = [
     { name = "torchxrayvision" },
 ]
@@ -1426,6 +1430,7 @@ requires-dist = [
     { name = "fpdf2", specifier = ">=2.8" },
     { name = "grpcio", specifier = ">=1.68" },
     { name = "httpx", specifier = ">=0.28" },
+    { name = "nibabel", marker = "extra == 'ct'", specifier = ">=5.3" },
     { name = "numpy", specifier = ">=2.1" },
     { name = "opencv-python-headless", specifier = ">=4.10" },
     { name = "pillow", specifier = ">=11.0" },
@@ -1434,6 +1439,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.9" },
     { name = "pydicom", specifier = ">=3.0.1" },
     { name = "python-multipart", specifier = ">=0.0.20" },
+    { name = "scikit-image", marker = "extra == 'ct'", specifier = ">=0.24" },
     { name = "streamlit", specifier = ">=1.50" },
     { name = "tensorflow", specifier = ">=2.21.0" },
     { name = "torchxrayvision", marker = "extra == 'seg'", specifier = ">=1.5" },
@@ -1450,6 +1456,19 @@ dev = [
     { name = "ruff", specifier = ">=0.8" },
 ]
 mlops = [{ name = "mlflow", specifier = ">=2.18" }]
+
+[[package]]
+name = "nibabel"
+version = "5.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e6/6c/73efb70c49d889a166bca4b100b85ac4b9873057e60dc7bd7c9d84e83bdd/nibabel-5.5.0.tar.gz", hash = "sha256:e45480281866dc2a804483d8a1434bfda3b43d2765c21531a0b9965a0dcbc985", size = 4691936 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/96/6e/f1702e042fa5ab28cfb5822578afd320ed0cf9f25959cb778be865e3a819/nibabel-5.5.0-py3-none-any.whl", hash = "sha256:2be7f9a33750a1af7983d5d067bac96cde4e954ea509a6a8ecd2a16d7a8f4c03", size = 3308048 },
+]
 
 [[package]]
 name = "nodeenv"

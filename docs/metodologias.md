@@ -176,7 +176,7 @@ alto nivel dependen de abstracciones, no de implementaciones concretas.
 `controller/factory.py` es la **raíz de composición**: el único lugar que conoce las clases concretas.
 
 **Por qué.** La Clase 1 los nombra explícitamente (Estrategia + DIP, cohesión y acoplamiento). Su
-beneficio medible: **382 de las 392 pruebas corren sin cargar modelos reales (118 MB + 273 MB)**, porque el controlador
+beneficio medible: **422 de las 432 pruebas corren sin cargar modelos reales (118 MB + 273 MB)**, porque el controlador
 recibe dobles de prueba.
 
 **Alternativa descartada.** Un contenedor de inyección de dependencias (p. ej. `dependency-injector`):
@@ -206,7 +206,7 @@ por interoperabilidad; gRPC para clientes internos de baja latencia (protobuf bi
 **Qué es.** Muchas pruebas unitarias rápidas, menos de integración y pocas de extremo a extremo. Cada prueba se
 organiza en *Arrange / Act / Assert*.
 
-**Cómo se aplica.** 392 pruebas, cobertura 98 %:
+**Cómo se aplica.** 432 pruebas, cobertura 98 %:
 - Unitarias: lectores, metadatos, preprocesamiento, decisión, métricas, presentador.
 - Integración: API con `TestClient`, gRPC en proceso, Keras mínimo real (`tiny_keras_model`), MLflow con SQLite.
 - Extremo a extremo: modelo real (`-m model`), `smoke_infer.py`, `scripts/container_smoke.py` contra el contenedor.
@@ -383,7 +383,7 @@ verificables y compuertas automáticas, con revisión humana de cada cambio.
 | Especificaciones | `specs/*.md` | Criterios de aceptación que el agente convierte en pruebas |
 | Diseño | `docs/arquitectura/DESIGN.md` + 12 diagramas | Fase *design* del flujo spec → design → tasks: cómo se construye lo especificado |
 | Mapa del código (graphify) | `graphify-out/`, skill `graphify`, hooks | Grafo de 1 025 nodos que el agente consulta antes de leer archivos; verifica las dependencias entre capas |
-| Memoria (Engram) | `.engram/`, `scripts/engram_memoria.py` | 21 decisiones y hallazgos que el agente recupera entre sesiones para no re-litigar ADR |
+| Memoria (Engram) | `.engram/`, `scripts/engram_memoria.py` | 22 decisiones y hallazgos que el agente recupera entre sesiones para no re-litigar ADR |
 
 **Por qué.**
 - El curso promueve agentes de código en terminal (Antigravity CLI, OpenCode, Cursor).
