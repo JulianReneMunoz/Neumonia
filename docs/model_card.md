@@ -57,6 +57,10 @@ Latencia medida en CPU (2 vCPU): ≈ 0.5 s de inferencia + ≈ 0.5 s de Grad-CAM
 2. **Sesgo potencial** por sexo, edad y proyección AP/PA (las AP concentran pacientes hospitalizados).
 3. **Calibración**: las probabilidades son puntajes softmax, no frecuencias; no interpretar 0.98 como "98 % de certeza".
 4. **Explicabilidad**: Grad-CAM muestra *dónde* miró la red, no *por qué* es correcta. Tiene baja resolución (31×31).
+   El **informe de hallazgos por zonas** y las **vistas 3D** (v0.4.0, ADR-0007) resumen esa atención: no son una
+   segmentación de lesiones ni una reconstrucción anatómica (una radiografía es 2D), y las zonas son geométricas
+   aproximadas (menos exactas en placas rotadas o recortadas). La alerta de atajo (razón de densidad fuera/dentro
+   ≥ 1.0) se activa en 3 de las 5 muestras del curso, entre ellas `viral (3).dcm` (1.04).
 5. **Privacidad**: el sistema descarta PatientID/PatientName y no los registra; el documento del paciente
    solo se guarda en el historial local si el médico lo decide.
 6. **Supervisión humana**: toda salida va acompañada del aviso "no reemplaza el criterio de un profesional".

@@ -15,7 +15,8 @@ import numpy as np
 from fpdf import FPDF
 from PIL import Image
 
-from neumonia.domain import Prediction
+from neumonia.controller.findings import ZONE_LABELS
+from neumonia.domain import Findings, Prediction
 
 HISTORY_HEADER = ("fecha_utc", "paciente", "label", "probabilidad", "subtipo")
 DISCLAIMER = (
@@ -95,6 +96,38 @@ def build_pdf_report(
     pdf.set_font("Helvetica", "I", 8)
     pdf.cell(95, 5, "Radiografia", align="C")
     pdf.cell(95, 5, "Grad-CAM", align="C", new_x="LMARGIN", new_y="NEXT")
+    if prediction.findings is not None:
+        _write_findings(pdf, prediction.findings)
     pdf.ln(4)
+    pdf.set_font("Helvetica", "I", 8)
     pdf.multi_cell(0, 5, _latin1(DISCLAIMER))
     return bytes(pdf.output())
+
+
+def _write_findings(pdf: FPDF, findings: Findings) -> None:
+    """Informe detallado: narrativa + tabla de atención por zona pulmonar."""
+    pdf.ln(3)
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 7, _latin1("Informe de hallazgos asistido"), new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 9)
+    for line in findings.summary:
+        pdf.multi_cell(0, 5, _latin1(f"- {line}"), new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.cell(110, 6, _latin1("Zona pulmonar (aproximada)"), border=1)
+    pdf.cell(40, 6, _latin1("Atención media"), border=1, new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 9)
+    for zone, value in findings.zone_attention.items():
+        marker = "  <- dominante" if zone == findings.dominant_zone else ""
+        pdf.cell(110, 6, _latin1(ZONE_LABELS.get(zone, zone) + marker), border=1)
+        pdf.cell(40, 6, f"{value:.0%}", border=1, new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(
+        0,
+        6,
+        _latin1(
+            f"Extensión de alta atención: {findings.extent_pct:.0f} %  ·  "
+            f"Atención fuera de los pulmones: {findings.out_of_lung_pct:.0f} %"
+        ),
+        new_x="LMARGIN",
+        new_y="NEXT",
+    )

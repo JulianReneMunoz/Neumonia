@@ -162,6 +162,15 @@ MEMORIAS: list[tuple[str, str, str, str]] = [
         "graphify: grafo en graphify-out/ (make grafo). Engram: memoria del proyecto 'neumonia' en .engram/ "
         "(make memoria).",
     ),
+    (
+        "decision",
+        "decision/hallazgos-3d",
+        "Informe de hallazgos por zonas y vistas 3D (ADR-0007)",
+        "Grad-CAM 31x31 resumido en 6 zonas geometricas (derecho = izquierda de la imagen), lateralidad por la "
+        "zona mas intensa de cada lado, extension (atencion >= 0.5) y alerta de atajo si la densidad fuera/dentro "
+        "de los pulmones >= 1.0 (tope 99). Vistas 3D Plotly: relieve de atencion y esquema no anatomico. "
+        "No es segmentacion ni reconstruccion 3D (la radiografia es 2D). Campo aditivo findings en /predict.",
+    ),
 ]
 
 

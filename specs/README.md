@@ -9,3 +9,4 @@ convierte cada criterio en una prueba antes de escribir código. Estado: ✅ imp
 | [002 Explicabilidad Grad-CAM](002-explicabilidad.md) | HU-02 | ✅ |
 | [003 Evaluación con metadatos](003-evaluacion-metadatos.md) | HU-05, HU-06 | 🟡 (falta corrida RSNA 500) |
 | [004 Despliegue en Droplet](004-despliegue.md) | HU-07 | 🟡 |
+| [005 Hallazgos y vistas 3D](005-hallazgos-3d.md) | HU-08 | ✅ (rama `feature/hallazgos-3d`) |
