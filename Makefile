@@ -10,7 +10,7 @@ WSL_PROJECT   ?= /mnt/c/Neumonia
 .PHONY: help install model data-course dataset-rsna dataset-kermany run api ui grpc proto \
         smoke test test-fast cov lint format check evaluate mlflow docker-build docker-up \
         docker-down docker-smoke hooks grafo memoria memoria-exportar memoria-buscar diagramas clean \
-        seg ui-seg evaluate-loc ct-setup ct-precompute ui-ct backend frontend
+        seg ui-seg evaluate-loc ct-setup ct-precompute ui-ct backend frontend mlflow-runs
 
 help:  ## Lista los comandos
 	@uv run python -c "import re,sys; [print(f'  make {m[0]:<16} {m[1]}') for m in re.findall(r'^([a-z-]+):.*?## (.*)$$', open('Makefile', encoding='utf-8').read(), re.M)]"
@@ -95,8 +95,13 @@ evaluate: data-course  ## Evalúa el modelo y registra el experimento en MLflow
 evaluate-loc: model  ## ¿Grad-CAM apunta a la lesión? Compara con las cajas de RSNA (300 casos)
 	uv run --group mlops python scripts/evaluate_localization.py --limit 300
 
-mlflow:  ## Interfaz de MLflow en http://127.0.0.1:5000
-	uv run --group mlops mlflow ui --backend-store-uri sqlite:///mlflow.db
+mlflow:  ## (M3) Servidor y UI de MLflow con Model Registry en http://127.0.0.1:5050
+	uv run --group mlops mlflow server --host 127.0.0.1 --port 5050 \
+		--backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns
+
+mlflow-runs: export MLFLOW_TRACKING_URI = http://127.0.0.1:5050
+mlflow-runs: model  ## (M3) 3 runs comparables + Model Registry (con make mlflow en otra terminal; SPEC-013)
+	uv run --group mlops python scripts/mlflow_m3.py $(ARGS)
 
 docker-build:  ## Construye las imágenes CPU (api y ui)
 	docker compose build
