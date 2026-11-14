@@ -61,7 +61,7 @@ make check            # ruff + formato + 340 pruebas con cobertura ≥ 80 %
 make backend          # http://localhost:8000/docs  (API FastAPI; carga el modelo al arrancar)
 make frontend         # http://localhost:5173       (frontend desacoplado HTML/JS; otra terminal)
 make ui               # http://localhost:8501       (app Streamlit interna; no se usa en la demo del M3)
-make evaluate; make mlflow   # experimento en http://127.0.0.1:5000
+make mlflow; make mlflow-runs   # MLflow + Model Registry en http://127.0.0.1:5050
 ```
 Sin `make`: cada objetivo equivale a un comando `uv` (ver el `Makefile`), por ejemplo `uv run streamlit run src/neumonia/view/streamlit_app.py`.
 Si TensorFlow falla por rutas largas en Windows: `New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force` (PowerShell como administrador).
