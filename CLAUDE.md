@@ -3,7 +3,7 @@
 Contexto para Claude Code (y cualquier agente de consola). Léelo antes de tocar código.
 
 ## Qué es
-Detector de neumonía en radiografías de tórax (DICOM/JPG/PNG) con el modelo Keras
+Apoyo al diagnóstico de neumonía en radiografías de tórax (DICOM/JPG/PNG) con el modelo Keras
 `conv_MLP_84.h5` (3 clases: bacteriana, normal, viral) y explicabilidad Grad-CAM.
 Proyecto integrador del curso *Gestión de Proyectos en IA y CD* (UAO 2026-2S, caso base).
 **El curso no evalúa la exactitud del modelo**: evalúa que se pueda cargar, inferir, probar,

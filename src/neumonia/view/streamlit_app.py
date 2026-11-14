@@ -16,7 +16,7 @@ from neumonia.controller.gateways import build_gateway
 from neumonia.controller.report import DISCLAIMER, append_history, build_pdf_report
 from neumonia.view.presenter import present, validate_patient_id
 
-st.set_page_config(page_title="Detector de neumonía", page_icon="🫁", layout="wide")
+st.set_page_config(page_title="Apoyo al diagnóstico de neumonía", page_icon="🫁", layout="wide")
 settings = get_settings()
 
 
