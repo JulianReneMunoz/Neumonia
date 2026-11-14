@@ -505,8 +505,8 @@ claude                                       # lee CLAUDE.md automáticamente
 | Módulo | Peso | Evidencia | Estado |
 |---|:-:|---|:-:|
 | **M1** · Código heredado, arquitectura y entorno | 25 % | MVC, uv, pruebas AAA, Docker CPU, CI + Ruff + Gitflow, PDF | ✅ |
-| **M2** · Propuesta | 35 % | [`docs/M2_propuesta.md`](docs/M2_propuesta.md): Data Thinking, BMC, OKR/KPI, riesgos, Kanban | ✅ |
-| **M3** · Construcción local | 25 % | Frontend desacoplado + FastAPI, MLflow :5050 con Registry, SDD en [`specs/`](specs/), PR en GitHub | ✅ |
+| **M2** · Propuesta | 35 % | [`docs/M2_propuesta.md`](docs/M2_propuesta.md): Data Thinking, BMC, OKR/KPI, riesgos, Kanban ([tablero](https://github.com/users/JulianReneMunoz/projects/5) · [`docs/kanban.md`](docs/kanban.md)) | ✅ |
+| **M3** · Construcción local | 25 % | Frontend desacoplado + FastAPI, MLflow :5050 con Registry, SDD en [`specs/`](specs/), PR en GitHub, [Kanban](docs/kanban.md) en GitHub Projects | ✅ |
 | **M4** · Producción | 15 % | [`.gitlab-ci.yml`](.gitlab-ci.yml), [`docs/M4_despliegue.md`](docs/M4_despliegue.md), [`docs/postmortem.md`](docs/postmortem.md) | 🔜 |
 
 **Documentos de soporte:** [Model Card](docs/model_card.md) · [Dataset](docs/dataset.md) · [ADR](docs/adr/) ·

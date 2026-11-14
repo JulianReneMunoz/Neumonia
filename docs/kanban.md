@@ -24,8 +24,8 @@
 | Backlog | 0 |
 | Todo | 1 |
 | In Progress | 0 |
-| En revisión | 1 |
-| Done | 30 |
+| En revisión | 0 |
+| Done | 31 |
 | **Total** | **32** |
 
 ## Backlog
@@ -44,14 +44,13 @@ _Sin ítems._
 
 ## En revisión
 
-| # | Título | Tipo | Etiquetas | Enlace |
-|:-:|---|:-:|---|---|
-| 31 | docs(readme): README visual del M3 | PR | — | [abrir](https://github.com/JulianReneMunoz/Neumonia/pull/31) |
+_Sin ítems._
 
 ## Done
 
 | # | Título | Tipo | Etiquetas | Enlace |
 |:-:|---|:-:|---|---|
+| 31 | docs(readme): README visual del M3 | PR | — | [abrir](https://github.com/JulianReneMunoz/Neumonia/pull/31) |
 | 30 | feat(mlflow): 3 corridas comparables y Model Registry en el puerto 5050 (SPEC-013) | PR | `docs` `mlflow` `qa` | [abrir](https://github.com/JulianReneMunoz/Neumonia/pull/30) |
 | 29 | HU: Comparar 3 configuraciones en MLflow y registrar el modelo servido | Issue | `docs` `mlflow` `qa` | [abrir](https://github.com/JulianReneMunoz/Neumonia/issues/29) |
 | 28 | feat(frontend): informe detallado y tomografía 3D con pulmones y lesión (SPEC-017, SPEC-018) | PR | — | [abrir](https://github.com/JulianReneMunoz/Neumonia/pull/28) |
