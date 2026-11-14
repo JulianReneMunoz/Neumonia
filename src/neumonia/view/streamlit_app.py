@@ -15,7 +15,12 @@ from neumonia.controller.errors import GatewayError, InvalidImageError, ModelNot
 from neumonia.controller.gateways import build_gateway
 from neumonia.controller.report import DISCLAIMER, append_history, build_pdf_report
 from neumonia.view.overlays import zones_overlay
-from neumonia.view.presenter import present, present_findings, validate_patient_id
+from neumonia.view.presenter import (
+    patient_rows,
+    present,
+    present_findings,
+    validate_patient_id,
+)
 from neumonia.view.visual3d import attention_surface_figure, lungs_3d_figure
 
 st.set_page_config(page_title="Apoyo al diagnóstico de neumonía", page_icon="🫁", layout="wide")
@@ -36,6 +41,7 @@ with st.sidebar:
     patient_id = st.text_input("Documento del paciente", max_chars=15)
     uploaded = st.file_uploader("Radiografía", type=["dcm", "jpg", "jpeg", "png"])
     run = st.button("Predecir", type="primary", disabled=uploaded is None, width="stretch")
+    patient_panel = st.container()
     st.divider()
     mode = "API REST" if settings.api_url else "local"
     st.caption(f"Modo de inferencia: **{mode}** · {settings.model_version}")
@@ -49,6 +55,7 @@ if run and uploaded is not None:
             with st.spinner("Analizando la radiografía…"):
                 st.session_state["result"] = gateway().predict(uploaded.getvalue(), uploaded.name)
                 st.session_state["patient"] = patient_id.strip()
+                st.session_state["filename"] = uploaded.name
         except InvalidImageError as exc:
             st.error(f"Imagen inválida: {exc}")
         except ModelNotFoundError as exc:
@@ -58,6 +65,15 @@ if run and uploaded is not None:
 
 result = st.session_state.get("result")
 if result is not None:
+    with patient_panel:
+        st.divider()
+        st.subheader("Datos del paciente")
+        for label, value in patient_rows(
+            result.prediction.metadata,
+            st.session_state.get("patient", ""),
+            st.session_state.get("filename", ""),
+        ):
+            st.markdown(f"**{label}:** {value}")
     view = present(result.prediction)
     findings = result.prediction.findings
     tab_res, tab_inf, tab_3d = st.tabs(["🩻 Resultado", "📋 Informe detallado", "🧊 Vista 3D"])
@@ -76,14 +92,6 @@ if result is not None:
         col_res.table(
             {"Clase": list(view.probabilities), "Probabilidad": list(view.probabilities.values())}
         )
-        if view.metadata_rows:
-            with col_res.expander("Metadatos de la imagen"):
-                st.table(
-                    {
-                        "Campo": [r[0] for r in view.metadata_rows],
-                        "Valor": [r[1] for r in view.metadata_rows],
-                    }
-                )
 
     with tab_inf:
         if findings is None:

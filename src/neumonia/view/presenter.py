@@ -19,6 +19,8 @@ METADATA_LABELS = {
     "photometric": "Fotometría",
     "rows": "Alto (px)",
     "columns": "Ancho (px)",
+    "patient_code": "Código del paciente (seudónimo)",
+    "dataset_code": "Código en el dataset",
 }
 SUBTYPE_LABELS = {"bacteriana": "Bacteriana", "viral": "Viral", "normal": "Sin hallazgos"}
 
@@ -116,3 +118,46 @@ def present_findings(findings: Findings) -> FindingsView:
         segmentation=SEGMENTATION_DISPLAY.get(findings.lung_source, findings.lung_source),
         segmentation_note=findings.lung_note,
     )
+
+
+SEX_DISPLAY = {"F": "Femenino", "M": "Masculino", "O": "Otro"}
+VIEW_DISPLAY = {
+    "AP": "AP (anteroposterior)",
+    "PA": "PA (posteroanterior)",
+    "LL": "Lateral",
+    "LATERAL": "Lateral",
+}
+MODALITY_DISPLAY = {"DX": "Radiografía digital (DX)", "CR": "Radiografía computarizada (CR)"}
+BODY_PART_DISPLAY = {"CHEST": "Tórax"}
+
+
+def patient_rows(
+    metadata: dict[str, object], patient_id: str = "", filename: str = ""
+) -> list[tuple[str, str]]:
+    """Datos del paciente y del estudio para el panel lateral (sin PatientID ni PatientName)."""
+    rows = [("Documento", patient_id.strip() or "No ingresado")]
+    if "patient_code" in metadata:
+        rows.append(("Código del paciente", str(metadata["patient_code"])))
+    if "dataset_code" in metadata:
+        rows.append(("Código en el dataset", str(metadata["dataset_code"])))
+    if "age" in metadata:
+        rows.append(("Edad", f"{metadata['age']} años"))
+    if "sex" in metadata:
+        sex = str(metadata["sex"])
+        rows.append(("Sexo", SEX_DISPLAY.get(sex, sex)))
+    if "view_position" in metadata:
+        view = str(metadata["view_position"]).upper()
+        rows.append(("Proyección", VIEW_DISPLAY.get(view, view)))
+    if "modality" in metadata:
+        modality = str(metadata["modality"]).upper()
+        rows.append(("Modalidad", MODALITY_DISPLAY.get(modality, modality)))
+    if "body_part" in metadata:
+        part = str(metadata["body_part"]).upper()
+        rows.append(("Región", BODY_PART_DISPLAY.get(part, part.capitalize())))
+    if "rows" in metadata and "columns" in metadata:
+        rows.append(("Imagen", f"{metadata['columns']} × {metadata['rows']} px"))
+    if not metadata:
+        rows.append(("Metadatos", "No disponibles (imagen JPG o PNG)"))
+    if filename:
+        rows.append(("Archivo", filename))
+    return rows

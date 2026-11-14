@@ -13,7 +13,9 @@ Streamlit, una API REST (FastAPI) o gRPC, y corre en contenedores **CPU**.
 El curso **no evalúa la exactitud del modelo**: evalúa que el artefacto se pueda **cargar, inferir, probar,
 contenerizar y desplegar con un contrato claro**. Este repositorio cubre los cuatro verbos y los documenta.
 
-![Interfaz clínica](docs/img/ui_streamlit.png)
+| Radiografía | Tomografía 3D (prototipo) |
+|---|---|
+| ![Interfaz clínica: radiografía](docs/img/ui_streamlit.png) | ![Interfaz clínica: tomografía 3D](docs/img/ui_tomografia.png) |
 
 ## 1. Fuente y licencia
 - **Modelo**: `conv_MLP_84.h5` del caso base (UAO-Neumonía), Release público `modelo-v1`, SHA-256 verificado. Uso académico.
