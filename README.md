@@ -1,215 +1,480 @@
-# Neumonía — caso base (Keras/TF + Grad-CAM)
+<div align="center">
 
-> Proyecto integrador · **Gestión de Proyectos en IA y Ciencia de Datos** · Maestría en IA y CD · UAO 2026-2S
-> Docente: Jan Polanco Velasco · Ruta local del proyecto: `C:\Neumonia`
->
-> ⚠️ Herramienta **académica** de apoyo. No reemplaza el criterio de un profesional de la salud ni es un dispositivo médico.
+# 🫁 Apoyo al diagnóstico de neumonía
 
-Sistema que recibe una radiografía de tórax (**DICOM, JPG o PNG**), la clasifica como **NORMAL** o **PNEUMONIA**
-(con subtipo sugerido *bacteriana / viral*), muestra un mapa de calor **Grad-CAM**, expone los **metadatos DICOM no
-identificables** (edad, sexo, proyección) y genera un **reporte PDF**. Se usa desde una interfaz clínica en
-Streamlit, una API REST (FastAPI) o gRPC, y corre en contenedores **CPU**.
+### Radiografía de tórax → clasificación, explicación Grad-CAM e informe · Tomografía → pulmones y lesión en 3D
 
-El curso **no evalúa la exactitud del modelo**: evalúa que el artefacto se pueda **cargar, inferir, probar,
-contenerizar y desplegar con un contrato claro**. Este repositorio cubre los cuatro verbos y los documenta.
+<p>
+  <img alt="Python 3.13" src="https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white">
+  <img alt="uv" src="https://img.shields.io/badge/uv-entorno%20reproducible-DE5FE9?style=for-the-badge&logo=astral&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20REST-009688?style=for-the-badge&logo=fastapi&logoColor=white">
+  <img alt="Keras 3" src="https://img.shields.io/badge/Keras%203-TensorFlow-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white">
+</p>
+<p>
+  <img alt="MLflow" src="https://img.shields.io/badge/MLflow-Model%20Registry%20%3A5050-0194E2?style=for-the-badge&logo=mlflow&logoColor=white">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-CPU-2496ED?style=for-the-badge&logo=docker&logoColor=white">
+  <img alt="Plotly" src="https://img.shields.io/badge/Plotly.js-3D%20sin%20internet-3F4F75?style=for-the-badge&logo=plotly&logoColor=white">
+  <img alt="Pruebas" src="https://img.shields.io/badge/pruebas-463%20%E2%9C%94-2EA043?style=for-the-badge&logo=pytest&logoColor=white">
+  <img alt="Cobertura" src="https://img.shields.io/badge/cobertura-%E2%89%88%2097%20%25-2EA043?style=for-the-badge">
+</p>
 
-| Radiografía | Tomografía 3D (prototipo) |
-|---|---|
-| ![Interfaz clínica: radiografía](docs/img/ui_streamlit.png) | ![Interfaz clínica: tomografía 3D](docs/img/ui_tomografia.png) |
+**Proyecto integrador · Gestión de Proyectos en Inteligencia Artificial y Ciencia de Datos · 2026-2S**<br>
+Maestría en IA y Ciencia de Datos · UAO · Docente: Jan Polanco Velasco
 
-## 1. Fuente y licencia
-- **Modelo**: `conv_MLP_84.h5` del caso base (UAO-Neumonía), Release público `modelo-v1`, SHA-256 verificado. Uso académico.
-- **Código heredado**: [`dalquinones/UAO-Neumonia`](https://github.com/dalquinones/UAO-Neumonia) (monolito de 251 líneas refactorizado aquí).
-- **Dataset con metadatos**: [RSNA Pneumonia Detection Challenge 2018](https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge)
-  (investigación/educación con atribución) + muestras del aula. Complementario: Kermany *Chest X-Ray* (CC BY 4.0).
-  Ver [`docs/dataset.md`](docs/dataset.md).
+[Demo](#-demo-en-3-comandos) ·
+[Capturas](#-recorrido-visual) ·
+[Arquitectura](#-arquitectura) ·
+[Modelos](#-modelos-preentrenados) ·
+[Resultados](#-resultados) ·
+[Datos](#-datos) ·
+[MLflow](#-mlflow-y-trazabilidad) ·
+[Contrato](#-contrato-de-la-api) ·
+[Entregables](#-entregables-del-curso)
 
-## 2. Estado de artifacts
+</div>
 
-| Artifact | Estado | Ubicación / cómo obtenerlo |
-|---|---|---|
-| Modelo | ✅ descarga verificada | `artifacts/model/conv_MLP_84.h5` (118 MB, ignorado por Git) · `make model` |
-| Dataset aula | ✅ local | `data/JPG.zip`, `data/DICOM.zip` · `make data-course` → catálogo con metadatos |
-| Dataset RSNA (metadatos) | ✅ script | `make dataset-rsna` (Kaggle) → `data/processed/rsna_metadata.csv` |
-| Muestras de entrada | ✅ local | `artifacts/samples/` — 3 JPG + 2 DICOM (smoke, no miden calidad) |
-| Contrato de salida | ✅ implementado | `api/openapi.yaml`, `api/README.md`, `artifacts/expected/response_example.json` |
-| Docker CPU | ✅ | `docker/Dockerfile` (multi-etapa, no root, healthcheck) + `docker-compose.yml` |
-| Smoke test | ✅ | `smoke_infer.py`, `tests/` (340 pruebas, 99 %), `scripts/container_smoke.py` |
-| API | ✅ | FastAPI `:8000` (`/health`, `/predict`, `/docs`) + gRPC `:50051` |
-| UI | ✅ | Streamlit clínico `:8501` |
-| MLflow | ✅ | `make evaluate` · `make mlflow` |
-| CI/CD | ✅ | `.github/workflows/ci.yml` (M1) · `.gitlab-ci.yml` (M4, Droplet) |
-| Kit agéntico | ✅ | `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` (10, incl. graphify), `.claude/agents/` (2), hooks |
-| Arquitectura | ✅ | `docs/arquitectura/`: DESIGN.md + 12 diagramas C4/4+1 + trazabilidad metodologías ↔ arquitectura |
-| Grafo (graphify) | ✅ | `graphify-out/` (1 025 nodos, 0 ciclos) · `make grafo` |
-| Memoria (Engram) | ✅ | `.engram/` (19 decisiones y hallazgos, proyecto `neumonia`) · `make memoria` |
+> [!WARNING]
+> Herramienta **académica** de apoyo. No reemplaza el criterio de un profesional de la salud ni constituye un
+> dispositivo médico certificado.
 
-## 3. Inicio rápido en Windows (`C:\Neumonia`)
+---
+
+## ✨ En una mirada
+
+<table>
+<tr>
+<td width="25%" align="center">
+<h3>🩻</h3>
+<b>Clasifica</b><br>
+<sub>NORMAL / NEUMONÍA con subtipo sugerido (bacteriana o viral) a partir de DICOM, JPG o PNG</sub>
+</td>
+<td width="25%" align="center">
+<h3>🔥</h3>
+<b>Explica</b><br>
+<sub>Mapa Grad-CAM, informe por zonas pulmonares, lateralidad y alerta de <i>atajo</i> del modelo</sub>
+</td>
+<td width="25%" align="center">
+<h3>🧊</h3>
+<b>Reconstruye</b><br>
+<sub>Tomografía en 3D: pulmones, arterias, vidrio esmerilado y consolidación, con % por lóbulo</sub>
+</td>
+<td width="25%" align="center">
+<h3>🚀</h3>
+<b>Despliega</b><br>
+<sub>API REST y gRPC, frontend desacoplado, MLflow, Docker CPU y CI/CD con compuertas</sub>
+</td>
+</tr>
+</table>
+
+El curso no evalúa la exactitud del modelo: evalúa que el artefacto se pueda **cargar, inferir, probar,
+contenerizar y desplegar con un contrato claro**. Este repositorio cubre los cuatro verbos, los mide y los
+documenta.
+
+<table>
+<tr>
+<th align="center">🔒 Privacidad</th>
+<th align="center">🧪 Calidad</th>
+<th align="center">📐 Diseño</th>
+<th align="center">📝 Especificación</th>
+</tr>
+<tr>
+<td align="center"><sub>Sin <code>PatientName</code>; el documento se convierte en un código seudónimo <code>PAC-…</code> (HMAC)</sub></td>
+<td align="center"><sub>463 pruebas AAA, cobertura ≈ 97 %, Ruff y <i>fitness functions</i> de arquitectura en CI</sub></td>
+<td align="center"><sub>MVC + Estrategia + DIP: el modelo se cambia sin tocar la API ni la vista</sub></td>
+<td align="center"><sub>Desarrollo guiado por especificaciones: <code>spec.md</code>, <code>plan.md</code> y <code>tasks.md</code> por cambio</sub></td>
+</tr>
+</table>
+
+---
+
+## 🚀 Demo en 3 comandos
+
+Tres terminales en `C:\Neumonia` (Windows; en macOS y Linux los comandos son los mismos):
+
+| # | Terminal | Comando | Abre |
+|:-:|---|---|---|
+| 1 | 📊 MLflow | `make mlflow` | <http://127.0.0.1:5050> |
+| 2 | ⚙️ Backend | `make backend` | <http://localhost:8000/docs> |
+| 3 | 🖥️ Frontend | `make frontend` | <http://localhost:5173> |
+
+> [!TIP]
+> Primera vez: `make install` → `make model` → `make smoke`. Las corridas comparables de MLflow se registran con
+> `make mlflow-runs`. Sin `make`, cada objetivo equivale a un comando `uv run …` del `Makefile`.
+
+<details>
+<summary><b>Instalación completa en Windows</b></summary>
 
 ```powershell
-# 1) Herramientas (una vez). Cierre y abra PowerShell después.
+# 1) Herramientas (una vez). Cerrar y abrir PowerShell después.
 winget install astral-sh.uv Git.Git ezwinports.make Docker.DockerDesktop
 
 # 2) Proyecto
 cd C:\Neumonia
-make install          # uv sync --frozen --all-groups  (Python 3.13 lo instala uv)
+make install          # uv sync --frozen --all-groups (Python 3.13 lo instala uv)
 make model            # descarga conv_MLP_84.h5 y verifica SHA-256
 make smoke            # ✓ 5 muestras · contrato OK
-make check            # ruff + formato + 340 pruebas con cobertura ≥ 80 %
-
-# 3) Usar
-make backend          # http://localhost:8000/docs  (API FastAPI; carga el modelo al arrancar)
-make frontend         # http://localhost:5173       (frontend desacoplado HTML/JS; otra terminal)
-make ui               # http://localhost:8501       (app Streamlit interna; no se usa en la demo del M3)
-make mlflow; make mlflow-runs   # MLflow + Model Registry en http://127.0.0.1:5050
+make check            # ruff + formato + pruebas con cobertura ≥ 80 %
 ```
-Sin `make`: cada objetivo equivale a un comando `uv` (ver el `Makefile`), por ejemplo `uv run streamlit run src/neumonia/view/streamlit_app.py`.
-Si TensorFlow falla por rutas largas en Windows: `New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force` (PowerShell como administrador).
 
-macOS / Linux: los mismos comandos (`brew install uv make` o `curl -LsSf https://astral.sh/uv/install.sh | sh`).
+Si TensorFlow falla por rutas largas en Windows (PowerShell como administrador):
 
-## 4. Comandos
+```powershell
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force
+```
+</details>
 
-| Comando | Qué hace |
+---
+
+## 📸 Recorrido visual
+
+Frontend desacoplado (HTML/JS, puerto 5173) que consume la API REST por HTTP. No usa Streamlit.
+
+<table>
+<tr>
+<td width="50%" align="center"><b>① Resultado</b><br><sub>Clase, confianza, subtipo y Grad-CAM</sub></td>
+<td width="50%" align="center"><b>② Informe detallado</b><br><sub>Atención por zona pulmonar y alerta de atajo</sub></td>
+</tr>
+<tr>
+<td><img src="docs/img/frontend_resultado.png" alt="Resultado de la predicción con Grad-CAM"></td>
+<td><img src="docs/img/frontend_informe.png" alt="Informe detallado por zonas pulmonares"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>③ Vista 3D · Tomografía</b><br><sub>Pulmones, arterias y áreas afectadas, con informe por lóbulo</sub></td>
+<td width="50%" align="center"><b>④ Vista 3D · Atención del modelo</b><br><sub>Relieve de la rejilla Grad-CAM de la radiografía</sub></td>
+</tr>
+<tr>
+<td><img src="docs/img/frontend_tomografia_3d.png" alt="Reconstrucción 3D de pulmones y lesión"></td>
+<td><img src="docs/img/frontend_atencion_3d.png" alt="Superficie 3D de la atención del modelo"></td>
+</tr>
+</table>
+
+> [!NOTE]
+> La tomografía 3D es un **caso de demostración precalculado** con MEDPSeg (COVID-19-CT-Seg); no corresponde a la
+> radiografía cargada. En los datasets disponibles ningún paciente tiene radiografía y tomografía a la vez.
+
+---
+
+## 🏗️ Arquitectura
+
+```mermaid
+flowchart LR
+    U(["👩‍⚕️ Usuario"]) --> FE["🖥️ Frontend HTML/JS<br/>:5173"]
+    FE -- "POST /predict<br/>GET /ct/cases" --> API["⚙️ FastAPI<br/>:8000"]
+    G["gRPC<br/>:50051"] --> SVC
+    API --> SVC["PneumoniaService<br/>controlador"]
+    API --> CT["Casos de tomografía<br/>caché .npz"]
+    SVC --> RD["Lectores<br/>DICOM · JPG · PNG"]
+    RD --> PP["Preprocesamiento<br/>512 · gris · CLAHE"]
+    PP --> M["conv_MLP_84<br/>Keras 3"]
+    M --> GC["Grad-CAM<br/>GradientTape"]
+    SVC --> D["Política de decisión<br/>umbral"]
+    M -. "pyfunc" .-> ML["📊 MLflow<br/>:5050 · Model Registry"]
+    classDef ui fill:#e7f1fb,stroke:#2e6da4,color:#111
+    classDef core fill:#fff4e5,stroke:#e69500,color:#111
+    classDef model fill:#fde2e1,stroke:#c0392b,color:#111
+    class FE,U ui
+    class API,G,SVC,D,RD,PP,CT core
+    class M,GC,ML model
+```
+
+| Capa | Responsabilidad | Ubicación |
+|---|---|---|
+| 🖥️ **Vista** | Frontend desacoplado; consume la API por HTTP (ADR-0013) | `frontend/` |
+| 🔌 **Adaptadores** | FastAPI (REST + CORS), gRPC | `src/neumonia/api/`, `src/neumonia/grpc_api/` |
+| 🧭 **Controlador** | Servicio, política de decisión, informe, raíz de composición | `src/neumonia/controller/` |
+| 🧠 **Modelo** | Lectores, metadatos en lista blanca, preprocesamiento, clasificador, Grad-CAM | `src/neumonia/model/` |
+| 📊 **Seguimiento** | MLflow: corridas, métricas, artefactos y Model Registry | `src/neumonia/tracking/` |
+
+La arquitectura se verifica en CI: una prueba prohíbe que la API importe la vista y que la vista importe el modelo.
+Documentación completa, con 12 diagramas C4/4+1, en **[`docs/arquitectura/`](docs/arquitectura/)**: diseño técnico en
+[`DESIGN.md`](docs/arquitectura/DESIGN.md) y vista de componentes MVC en
+[`03-componentes-mvc.svg`](docs/arquitectura/diagramas/03-componentes-mvc.svg).
+
+<details>
+<summary><b>Mejoras sobre el monolito heredado</b></summary>
+
+| Antes (monolito de 251 líneas) | Ahora |
 |---|---|
-| `make install` | Entorno idéntico a `uv.lock` |
-| `make model` | Descarga y verifica el modelo |
-| `make data-course` / `make dataset-rsna` / `make dataset-kermany` | Datos + catálogo de metadatos |
-| `make mlflow` + `make mlflow-runs` | **MLflow del M3**: servidor y Model Registry en http://127.0.0.1:5050 y 3 corridas comparables (umbral 0.5, umbral 0.3, sin CLAHE) con calidad y latencia (SPEC-013) |
-| `make backend` + `make frontend` | **Demo del M3**: API FastAPI (:8000) + frontend desacoplado HTML/JS (:5173) que la consume por HTTP (ADR-0013, SPEC-012) |
-| `make ui` · `make api` · `make grpc` | App Streamlit interna, API REST, servidor gRPC |
-| `make smoke` | Smoke test del curso (carga → infiere → valida contrato) |
-| `make test` · `make test-fast` · `make cov` · `make check` | Pruebas y compuertas |
-| `make lint` · `make format` · `make hooks` | Ruff y pre-commit |
-| `make evaluate` · `make mlflow` | Evaluación con MLflow |
-| `make docker-build` · `make docker-up` · `make docker-smoke` · `make docker-down` | Contenedores |
-| `make grafo` · `make memoria` · `make memoria-exportar` · `make diagramas` | graphify, Engram y diagramas de arquitectura |
-| `make proto` · `make clean` · `make help` | Stubs gRPC, limpieza, ayuda |
+| TensorFlow 1 (`K.gradients`, `disable_eager_execution`) | `tf.GradientTape` sobre Keras 3 |
+| Grad-CAM con 64 de 128 filtros | Pondera los **128** filtros |
+| JPG leído con `read_dicom_file` | Lector por formato (Estrategia) |
+| Sin MONOCHROME1 ni 16 bits | Ambos soportados |
+| PDF a partir de capturas de pantalla | PDF generado desde los datos |
+| Historial sin encabezado | CSV estándar con encabezado |
+| PHI expuesta | Metadatos en lista blanca y seudónimo HMAC |
+</details>
 
-## 5. Contrato de inferencia
-- **Entrada**: `POST /predict` · `multipart/form-data` con `file` (DICOM/JPG/PNG, ≤ 20 MB).
-- **Salida**: `{ label: NORMAL|PNEUMONIA, probability, gradcam_url, subtype, class_probabilities, metadata, model_version, request_id }`
-- **Errores**: `422` entrada inválida (`detail[].msg`) · `500 {"error": "..."}`.
+<details>
+<summary><b>Estructura del repositorio</b></summary>
+
+```
+C:\Neumonia
+├── frontend/      index.html · app.js · styles.css · config.js   (demo M3)
+├── src/neumonia/
+│   ├── model/        readers · metadata · preprocessing · classifier · gradcam · ct_*
+│   ├── controller/   service · decision · factory · report · ct_service · ct_analysis
+│   ├── api/          app · schemas · ct_routes                    (FastAPI)
+│   ├── grpc_api/     neumonia.proto · server                      (gRPC)
+│   ├── view/         streamlit (uso interno, fuera de la demo)
+│   ├── data/         catálogo RSNA / Kermany / aula
+│   └── tracking/     MLflow
+├── specs/         especificaciones SDD (spec · plan · tasks)
+├── tests/         pruebas AAA + arquitectura
+├── api/           openapi.yaml · README.md
+├── docker/        Dockerfile multi-etapa · docker-compose.yml en la raíz
+├── docs/          arquitectura · adr · model_card · dataset · M2 · M4 · img
+└── .github/ · .gitlab-ci.yml · .claude/ (skills, agentes, hooks)
+```
+</details>
+
+---
+
+## 🧠 Modelos preentrenados
+
+No se entrenó ningún modelo: se integran **tres modelos preentrenados** y se miden con datos que no vieron.
+
+| | Modelo | Imagen | Función | Integración | Estado |
+|:-:|---|:-:|---|---|:-:|
+| 1️⃣ | **`conv_MLP_84`** · Keras | 🩻 Rx | **Clasifica** bacteriana / normal / viral | Núcleo de la API REST, gRPC y el frontend | 🟢 Siempre |
+| ➕ | **Grad-CAM** · técnica | 🩻 Rx | **Explica** dónde miró la red (31×31) | Se cruza con zonas pulmonares → informe y alerta de atajo | 🟢 Siempre |
+| 2️⃣ | **PSPNet** · TorchXRayVision | 🩻 Rx | **Segmenta** la silueta pulmonar real | Proceso aparte; control de calidad con respaldo geométrico | 🟡 Opcional |
+| 3️⃣ | **MEDPSeg** · PyTorch | 🧊 TC | **Segmenta** pulmones, lóbulos, vía aérea, arterias y lesión | Precálculo en caché → `/ct/cases` → Vista 3D | 🟠 Prototipo |
+
+```mermaid
+flowchart TD
+    subgraph RX["🩻 Radiografía"]
+        A["DICOM · JPG · PNG"] --> B["Anonimización<br/>lista blanca + HMAC"]
+        B --> C["Preprocesamiento<br/>512×512 · CLAHE"]
+        C --> D["conv_MLP_84"]
+        D --> E["Decisión<br/>NEUMONÍA / NORMAL + subtipo"]
+        D --> F["Grad-CAM"]
+        F --> X["Atención × zonas pulmonares<br/>lateralidad · alerta de atajo"]
+        E --> R["Resultado + informe"]
+        X --> R
+    end
+    subgraph TC["🧊 Tomografía"]
+        T["NIfTI"] --> M["MEDPSeg"]
+        M --> K["% por pulmón y lóbulo<br/>severidad 0–25"]
+        K --> V["Vista 3D + informe"]
+    end
+    R -. "siguiente paso" .-> I["Informe único por paciente"]
+    V -. "siguiente paso" .-> I
+    classDef modelo fill:#fde2e1,stroke:#c0392b,color:#111
+    classDef propio fill:#e7f1fb,stroke:#2e6da4,color:#111
+    classDef futuro fill:#f0efec,stroke:#999,color:#555,stroke-dasharray:4 3
+    class D,M modelo
+    class B,C,E,F,X,R,K,V propio
+    class I futuro
+```
+
+<sub>Rojo: modelos preentrenados · azul: código del proyecto · gris punteado: siguiente paso, aún no implementado.</sub>
+
+---
+
+## 📈 Resultados
+
+Cada modelo se evalúa por separado contra lo que marcaron radiólogos, con datos que el modelo no había visto.
+
+<table>
+<tr>
+<th align="center">AUC RSNA</th>
+<th align="center">Sensibilidad</th>
+<th align="center">Especificidad</th>
+<th align="center">Dice TC</th>
+<th align="center">Lesión TC</th>
+</tr>
+<tr>
+<td align="center"><h2>0,73</h2><sub>500 radiografías de adultos</sub></td>
+<td align="center"><h2>0,74</h2><sub>IC 95 % 0,66–0,81</sub></td>
+<td align="center"><h2>0,59</h2><sub>IC 95 % 0,54–0,64</sub></td>
+<td align="center"><h2>0,78</h2><sub>precisión 0,93 · recall 0,67</sub></td>
+<td align="center"><h2>15,7 %</h2><sub>871 mL · severidad 10/25</sub></td>
+</tr>
+</table>
+
+### 🩻 Radiografía · `conv_MLP_84`
+
+| Conjunto | n | Exactitud | Sensibilidad | Especificidad | AUC | Lectura |
+|---|:-:|:-:|:-:|:-:|:-:|---|
+| Muestras del aula | 16 | 0,94 | 1,00 | 0,83 | 0,98 | ⚠️ Posible solapamiento con el entrenamiento: no mide generalización |
+| **RSNA estratificado** | **500** | **0,63** | **0,74** | **0,59** | **0,73** | ✅ Evaluación honesta; `run_id` en la Model Card |
+| Opacidad vs. normal | 285 | — | 0,74 | 0,73 | 0,82 | Distingue bien «anormal» de «normal» |
+| Opacidad vs. otra anormalidad | 335 | — | 0,74 | 0,48 | 0,66 | Le cuesta separar neumonía de otras patologías |
+
+<details>
+<summary><b>Matriz de confusión · RSNA 500</b></summary>
+
+| | Predicho NEUMONÍA | Predicho NORMAL | |
+|---|:-:|:-:|---|
+| **Real: opacidad (120)** | ✅ VP = 89 | ❌ FN = 31 | Sensibilidad 0,74 |
+| **Real: sin opacidad (380)** | ❌ FP = 156 | ✅ VN = 224 | Especificidad 0,59 |
+| | VPP 0,36 | VPN 0,88 | |
+
+Un VPN de 0,88 significa que un resultado NORMAL es bastante confiable. Un VPP de 0,36 significa que un resultado
+NEUMONÍA pide confirmación. Ese perfil es coherente con una herramienta de **priorización**, no de diagnóstico.
+</details>
+
+<details>
+<summary><b>Subgrupos y hallazgos de sesgo</b></summary>
+
+| Variable | Grupo | n | Sensibilidad | Especificidad | AUC |
+|---|---|:-:|:-:|:-:|:-:|
+| Sexo | F | 227 | 0,72 | 0,61 | 0,72 |
+| Sexo | M | 273 | 0,76 | 0,58 | 0,73 |
+| Edad | 18–39 | 140 | 0,77 | 0,63 | 0,77 |
+| Edad | 65+ | 66 | 0,81 | 0,56 | 0,75 |
+
+- 🔴 **La proyección pesa más que el pulmón.** En AP el modelo predice neumonía casi siempre (especificidad 0,19).
+  En PA casi nunca la predice (sensibilidad 0,30). Dentro de cada proyección el AUC cae a ≈ 0,60.
+- 🟠 **Grad-CAM acierta la lesión en el 2,7 %** de 300 casos (*pointing game* contra las cajas de RSNA). En un
+  DICOM pediátrico AP atiende al marcador de lateralidad y a los bordes: posible aprendizaje por atajos (riesgo R-05).
+- 🟢 **Sexo:** sin diferencia relevante (AUC 0,72 frente a 0,73).
+</details>
+
+### 🧊 Tomografía · MEDPSeg (prototipo)
+
+| Caso | Volumen pulmonar | Lesión | Vidrio esmerilado | Consolidación | Severidad | Dice vs. radiólogos |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| `covid_ejemplo` (COVID-19-CT-Seg) | 5 560 mL | 871 mL · **15,7 %** | 847 mL | 24 mL | **10 / 25** | **0,78** |
+
+| Lóbulo | Volumen | Comprometido | Puntaje (0–5) |
+|---|:-:|:-:|:-:|
+| Superior derecho | 1 660 mL | 13,0 % | 2 |
+| **Medio derecho** | 910 mL | **20,6 %** | 2 |
+| Inferior derecho | 518 mL | 12,4 % | 2 |
+| Superior izquierdo | 1 415 mL | 19,2 % | 2 |
+| Inferior izquierdo | 1 057 mL | 12,4 % | 2 |
+
+> [!IMPORTANT]
+> La evaluación de radiografía es la sólida: cientos de casos, con intervalos de confianza. La de tomografía es una
+> primera validación con 1 de las 20 tomografías del dataset.
+
+---
+
+## 🗂️ Datos
+
+| Dataset | Tamaño | Metadatos | Etiquetas | Licencia | Uso |
+|---|---|---|---|---|:-:|
+| **[RSNA Pneumonia Detection Challenge (2018)](https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge)** | 26 684 DICOM 1024×1024 | Edad, sexo, proyección AP/PA, modalidad | Normal / opacidad / otra anormalidad, más **cajas** de radiólogos | Investigación y educación con atribución | ⭐ Principal |
+| Muestras del aula | 16 imágenes (`JPG.zip`, `DICOM.zip`) | DICOM con cabecera | Clase del caso base | Uso académico | 🧪 Smoke |
+| Kermany *Chest X-Ray* | 5 856 imágenes pediátricas | — | Normal / bacteriana / viral | CC BY 4.0 | ➕ Complementario |
+| COVID-19-CT-Seg | 20 tomografías | — | Máscaras de lesión hechas por radiólogos | CC BY 4.0 | 🧊 Tomografía |
+
+- Subconjunto estratificado reproducible: `--subset 2000 --seed 42`. Las imágenes no se versionan en Git; se
+  descargan con `make dataset-rsna`.
+- Detalle, alternativas descartadas (NIH ChestX-ray14, CheXpert, MIMIC-CXR) y *datasheet* en
+  **[`docs/dataset.md`](docs/dataset.md)**.
+
+---
+
+## 📊 MLflow y trazabilidad
+
+| Corrida | Variación | Qué compara |
+|---|---|---|
+| 1️⃣ Umbral 0,5 | Línea base | Contrato binario por defecto |
+| 2️⃣ Umbral 0,3 | Umbral más bajo | Más sensibilidad a costa de especificidad |
+| 3️⃣ Sin CLAHE | Preprocesamiento sin CLAHE | Efecto de la paridad entrenamiento-servicio |
+
+- `make mlflow` levanta el servidor en **:5050**.
+- `make mlflow-runs` registra las tres corridas con calidad y latencia.
+- El modelo queda en el **Model Registry** como `pyfunc` con alias, y cada cifra de la Model Card tiene un `run_id`.
+- Comparación en la interfaz: *Training runs* → seleccionar las 3 → **Compare**.
+
+---
+
+## 🔌 Contrato de la API
+
+| Método | Ruta | Entrada | Salida |
+|:-:|---|---|---|
+| `GET` | `/health` | — | Estado y versión del modelo |
+| `POST` | `/predict` | `multipart/form-data` · `file` (DICOM/JPG/PNG ≤ 20 MB) · documento opcional | Clase, probabilidad, subtipo, Grad-CAM, metadatos, hallazgos |
+| `GET` | `/ct/cases` | — | Casos de tomografía procesados |
+| `GET` | `/ct/cases/{id}` | — | Mallas 3D e informe por lóbulo |
 
 ```powershell
 curl.exe -s -F "file=@artifacts/samples/viral (3).dcm" http://localhost:8000/predict
 ```
+
 ```json
-{"label":"PNEUMONIA","probability":0.9921,"gradcam_url":"/static/gradcam/3c99….png","subtype":"viral",
- "class_probabilities":{"bacteriana":0.1039,"normal":0.0079,"viral":0.8882},
- "metadata":{"age":6,"sex":"F","view_position":"AP","modality":"CR","body_part":"CHEST"},
- "model_version":"conv_MLP_84@modelo-v1","request_id":"3c99…"}
-```
-`probability` es la de la etiqueta devuelta: `P(neumonía) = P(bacteriana) + P(viral)` (ADR-0003). Detalle: [`api/README.md`](api/README.md).
-
-## 6. Arquitectura (MVC + Estrategia + DIP)
-
-Documentación completa en **[`docs/arquitectura/`](docs/arquitectura/)**:
-- [DESIGN.md](docs/arquitectura/DESIGN.md): diseño técnico con 12 diagramas (contexto, contenedores, componentes, clases, secuencias, despliegue, CI/CD, CRISP-DM, flujo agéntico y dependencias medidas con graphify).
-- [METODOLOGIAS_ARQUITECTURA.md](docs/arquitectura/METODOLOGIAS_ARQUITECTURA.md): cada metodología relacionada con el componente que produce, su diagrama, su evidencia, su nodo en el grafo y su memoria en Engram.
-
-![Componentes MVC](docs/arquitectura/diagramas/03-componentes-mvc.svg)
-
-
-```mermaid
-flowchart LR
-  subgraph Vista
-    UI[Streamlit clínico<br/>view/streamlit_app.py] --> P[presenter.py]
-  end
-  subgraph Adaptadores
-    API[FastAPI<br/>api/app.py]
-    GRPC[gRPC<br/>grpc_api/server.py]
-  end
-  UI -- PredictionGateway<br/>Local / HTTP --> C
-  API --> C
-  GRPC --> C
-  subgraph Controlador
-    C[PneumoniaService<br/>service.py] --> D[ThresholdPolicy<br/>decision.py]
-    F[factory.py<br/>raíz de composición] -.crea.-> C
-    R[report.py<br/>PDF + historial]
-  end
-  subgraph Modelo
-    RD[readers.py<br/>DICOM · Raster] --> PP[preprocessing.py<br/>512 · gris · CLAHE]
-    PP --> K[KerasClassifier<br/>conv_MLP_84.h5]
-    K --> G[GradCamExplainer<br/>conv10_thisone]
-    RD --> M[metadata.py<br/>lista blanca]
-  end
-  C --> RD
-  C --> K
-  C --> G
+{
+  "label": "PNEUMONIA",
+  "probability": 0.9921,
+  "subtype": "viral",
+  "class_probabilities": { "bacteriana": 0.1039, "normal": 0.0079, "viral": 0.8882 },
+  "gradcam_url": "/static/gradcam/3c99….png",
+  "metadata": { "age": 6, "sex": "F", "view_position": "AP", "modality": "CR", "body_part": "CHEST" },
+  "model_version": "conv_MLP_84@modelo-v1",
+  "request_id": "3c99…"
+}
 ```
 
-```
-C:\Neumonia
-├── README.md · CLAUDE.md · AGENTS.md · Makefile · pyproject.toml · uv.lock · .python-version
-├── smoke_infer.py                 # smoke del curso
-├── src/neumonia/
-│   ├── config.py · domain.py · evaluation.py
-│   ├── model/        readers · metadata · preprocessing · classifier · gradcam · download
-│   ├── controller/   service · decision · factory · gateways · report · errors
-│   ├── view/         streamlit_app · presenter
-│   ├── api/          app · schemas                (FastAPI)
-│   ├── grpc_api/     neumonia.proto · server      (gRPC)
-│   ├── data/         dataset                      (catálogo RSNA / Kermany / aula)
-│   └── tracking/     tracker                      (MLflow)
-├── artifacts/   model/ · samples/ · expected/
-├── data/        JPG.zip · DICOM.zip · raw/ · processed/
-├── api/         openapi.yaml · README.md
-├── docker/      Dockerfile · README.md          + docker-compose.yml en la raíz
-├── tests/       18 archivos · 340 pruebas
-├── scripts/     fetch_model · fetch_dataset · evaluate · container_smoke · fetch_artifacts.sh
-├── docs/        metodologias · dataset · M2_propuesta · model_card · M4_despliegue · postmortem · adr/ · img/
-│   └── arquitectura/  DESIGN · METODOLOGIAS_ARQUITECTURA · GRAFO_GRAPHIFY · MEMORIA_ENGRAM · diagramas/ (12 .mmd + .svg)
-├── graphify-out/  graph.json · graph.html · graph.svg · GRAPH_REPORT.md · wiki/
-├── .engram/       config.json · manifest.json · chunks/   (memoria del proyecto)
-├── specs/       especificaciones con criterios de aceptación
-├── .claude/     settings.json · skills/ · agents/ · hooks/
-└── .github/ · .gitlab/ · .gitlab-ci.yml · .pre-commit-config.yaml
-```
+`probability` corresponde a la etiqueta devuelta: `P(neumonía) = P(bacteriana) + P(viral)` (ADR-0003).
+Errores: `422` para entrada inválida y `500 {"error": "..."}`. Especificación completa en
+[`api/openapi.yaml`](api/openapi.yaml); guía de uso en [`api/README.md`](api/README.md).
 
-Mejoras sobre el monolito:
-- TensorFlow 1 (`K.gradients`, `disable_eager_execution`) migrado a `tf.GradientTape` (Keras 3).
-- Grad-CAM pondera los **128** filtros, no solo 64.
-- El lector JPG ya no pasa por `read_dicom_file`.
-- Se maneja MONOCHROME1 y DICOM de 16 bits.
-- El PDF se genera desde los datos, sin capturas de pantalla.
-- El historial pasa a ser un CSV estándar con encabezado.
-- No se expone PHI.
+---
 
-## 7. Metodologías (resumen)
-Descripción completa y justificación de cada una en **[`docs/metodologias.md`](docs/metodologias.md)**. Su relación con cada componente de la arquitectura está en **[`docs/arquitectura/METODOLOGIAS_ARQUITECTURA.md`](docs/arquitectura/METODOLOGIAS_ARQUITECTURA.md)**.
+## 🧰 Comandos
 
-| Metodología | Por qué se eligió |
+| Grupo | Comandos | Para qué |
+|---|---|---|
+| 🏁 Arranque | `make install` · `make model` · `make smoke` | Entorno idéntico a `uv.lock`, modelo verificado y smoke |
+| 🎬 Demo M3 | `make mlflow` · `make backend` · `make frontend` | MLflow :5050, API :8000, frontend :5173 |
+| 📊 Experimentos | `make mlflow-runs` · `make evaluate` · `make evaluate-loc` | Corridas comparables, métricas y *pointing game* |
+| 🧪 Calidad | `make test` · `make cov` · `make check` · `make lint` | Pruebas, cobertura y Ruff |
+| 🗂️ Datos | `make data-course` · `make dataset-rsna` · `make dataset-kermany` | Datos y catálogo de metadatos |
+| 🧊 Tomografía | `make ct-setup` · `make ct-precompute CT=...` | MEDPSeg y caché de casos 3D |
+| 🐳 Contenedores | `make docker-build` · `make docker-up` · `make docker-smoke` | Docker CPU y Compose |
+| 🧭 Conocimiento | `make grafo` · `make memoria` · `make diagramas` | graphify, Engram y diagramas |
+
+---
+
+## 🧭 Metodologías
+
+<details>
+<summary><b>21 metodologías y por qué se eligió cada una</b></summary>
+
+| Metodología | Por qué |
 |---|---|
-| **CRISP-DM** + MLOps | Marco del curso; fases 1:1 con M2–M4; MLOps cubre su límite (operación continua) |
-| **Data Thinking** | Empezar por el problema del médico (priorizar y explicar), no por el modelo |
+| **CRISP-DM** + MLOps | Marco del curso; fases 1:1 con M2–M4 |
+| **Data Thinking** | Partir del problema clínico (priorizar y explicar), no del modelo |
 | **DAMA-DMBOK** | Gobierno de datos: metadatos, calidad, privacidad, linaje y licencias |
-| **Kanban** (Scrumban) | Equipo ≤ 4 con dedicación parcial y fechas fijas; WIP limitado |
-| **BMC + OKR/KPI** | Exigidos en M2; valor medible (sensibilidad, latencia p95) |
-| **Riesgos ISO 31000 + EU AI Act** | Apoyo diagnóstico = IA de alto riesgo; lista de obligaciones |
-| **MVC + Estrategia + DIP** | DoD del M1 y Clase 1; 331 de 340 pruebas sin cargar el modelo |
-| **Contract-first (OpenAPI)** + REST/gRPC | El curso evalúa "un contrato claro"; el modelo puede cambiar sin romper clientes |
-| **Pirámide de pruebas + AAA + fitness functions** | DoD del M1; arquitectura verificada en CI |
-| **uv + 12-factor + Docker** | Reproducibilidad (Windows, Linux, contenedor) con un solo `uv.lock` |
-| **Gitflow + Conventional Commits + SemVer** | DoD del M1; `release/*` congela lo que se sustenta |
-| **CI/CD con compuertas + DevSecOps** | M1 (GitHub Actions) y M4 (GitLab: Trivy, credenciales, despliegue manual) |
+| **Kanban** (Scrumban) | Dedicación parcial y fechas fijas; WIP limitado en GitHub Projects |
+| **BMC + OKR/KPI** | Valor medible: sensibilidad y latencia p95 |
+| **ISO 31000 + EU AI Act** | El apoyo diagnóstico es IA de alto riesgo |
+| **MVC + Estrategia + DIP** | La mayoría de las pruebas corren sin cargar el modelo |
+| **Contract-first (OpenAPI)** + REST/gRPC | El modelo cambia sin romper clientes |
+| **Pirámide de pruebas + AAA + fitness functions** | Arquitectura verificada en CI |
+| **uv + 12-factor + Docker** | Reproducibilidad con un solo `uv.lock` |
+| **Gitflow + Conventional Commits + SemVer** | `release/*` congela lo que se sustenta |
+| **CI/CD con compuertas + DevSecOps** | GitHub Actions (M1) y GitLab con Trivy (M4) |
+| **Spec-Driven Development** | Cada cambio con `spec.md`, `plan.md` y `tasks.md` |
 | **Modelo preentrenado** | El curso evalúa contrato y despliegue, no la métrica |
-| **Paridad entrenamiento-servicio (CLAHE)** | Evita el *training-serving skew* (Sculley et al., 2015) |
-| **Análisis de decisión (umbral)** | Contrato binario coherente; prioriza sensibilidad |
-| **Grad-CAM** | XAI de una pasada en CPU; reveló un posible **atajo** (riesgo R-05) |
-| **Evaluación por subgrupos** | Los metadatos RSNA permiten medir sesgo por sexo, edad y AP/PA |
-| **MLflow** | Exigido en M3; cada cifra de la Model Card tiene un `run_id` |
+| **Paridad entrenamiento-servicio (CLAHE)** | Evita el *training-serving skew* |
+| **Análisis de decisión (umbral)** | Prioriza sensibilidad con contrato binario |
+| **Grad-CAM** | XAI de una pasada en CPU; reveló un posible atajo |
+| **Evaluación por subgrupos** | Sesgo por sexo, edad y proyección |
+| **MLflow** | Cada cifra trazable a un `run_id` |
 | **Model Card + Datasheet** | Transparencia sobre usos y límites |
-| **Privacidad desde el diseño** | Ley 1581/2012: datos de salud = sensibles |
-| **Desarrollo con agentes (spec-driven)** | Productividad con reglas codificadas y control humano |
+| **Privacidad desde el diseño** | Ley 1581 de 2012: los datos de salud son sensibles |
 
-## 8. Desarrollo con consolas agénticas (Claude Code)
+Detalle en [`docs/metodologias.md`](docs/metodologias.md) y relación con la arquitectura en
+[`docs/arquitectura/METODOLOGIAS_ARQUITECTURA.md`](docs/arquitectura/METODOLOGIAS_ARQUITECTURA.md).
+</details>
+
+---
+
+## 🤖 Desarrollo con consolas agénticas
 
 ```powershell
 irm https://claude.ai/install.ps1 | iex     # o: npm install -g @anthropic-ai/claude-code
 cd C:\Neumonia
 claude                                       # lee CLAUDE.md automáticamente
 ```
+
+<details>
+<summary><b>Skills, subagentes, hooks y memoria del proyecto</b></summary>
+
 | Skill (`/nombre` o por descripción) | Para qué |
 |---|---|
 | `mvc-feature` | Agregar funcionalidad en la capa correcta (Estrategia/DIP) |
@@ -223,176 +488,76 @@ claude                                       # lee CLAUDE.md automáticamente
 | `entregables-curso` | Checklist M1–M4 y guion de sustentación |
 | `graphify` | Construir y consultar el grafo de conocimiento (`/graphify .`) |
 
-Subagentes: `revisor-arquitectura` (revisión de solo lectura antes del PR) y `escritor-pruebas`.
+- **Subagentes:** `revisor-arquitectura` (revisión de solo lectura antes del PR) y `escritor-pruebas`.
+- **graphify (mapa):** `make grafo` reconstruye `graphify-out/`; el agente consulta `uv run graphify query "..."`
+  antes de leer archivos. Detalle en [`GRAFO_GRAPHIFY.md`](docs/arquitectura/GRAFO_GRAPHIFY.md).
+- **Engram (memoria):** `engram setup claude-code` (una vez) y `make memoria` cargan las decisiones del proyecto;
+  el agente las recupera con `mem_search` y no re-litiga ADR. Detalle en
+  [`MEMORIA_ENGRAM.md`](docs/arquitectura/MEMORIA_ENGRAM.md).
+- **Hooks:** Ruff formatea cada `.py` editado; `guard_bash.py` bloquea `pip install`, `git add *.h5`, secretos y
+  *push* forzado.
+</details>
 
-**graphify (mapa) + Engram (memoria)**:
-- `make grafo` reconstruye `graphify-out/`. El agente consulta `uv run graphify query "..."` antes de leer archivos; un hook se lo recuerda. Detalle en [GRAFO_GRAPHIFY.md](docs/arquitectura/GRAFO_GRAPHIFY.md).
-- `engram setup claude-code` (una vez) y luego `make memoria` cargan las 19 decisiones y hallazgos del proyecto. El agente las recupera con `mem_search` y no re-litiga ADR. Detalle en [MEMORIA_ENGRAM.md](docs/arquitectura/MEMORIA_ENGRAM.md).
-Hooks: Ruff formatea cada `.py` editado; `guard_bash.py` bloquea `pip install`, `git add *.h5`, secretos y *push* forzado.
-Ejemplo de sesión: *"Usa la skill mvc-feature para agregar soporte TIFF con su prueba y luego pide al subagente
-revisor-arquitectura que revise el cambio."*
+---
 
-## 9. Entregables del curso
+## 🎓 Entregables del curso
 
-| Módulo | Peso | Evidencia |
-|---|---|---|
-| **M1** Código heredado, arquitectura y entorno | 25 % | MVC en `src/neumonia`, uv, 340 pruebas AAA, Docker CPU, Streamlit, CI + ruff + Gitflow, reporte PDF |
-| **M2** Propuesta | 35 % | [`docs/M2_propuesta.md`](docs/M2_propuesta.md): Data Thinking, BMC, OKR/KPI, alternativas, historias con AC, cronograma, riesgos, Kanban |
-| **M3** Construcción local | 25 % | FastAPI + gRPC, UI, MLflow, dataset RSNA con metadatos, Docker Compose |
-| **M4** Producción | 15 % | [`.gitlab-ci.yml`](.gitlab-ci.yml), [`docs/M4_despliegue.md`](docs/M4_despliegue.md), [`docs/postmortem.md`](docs/postmortem.md) |
+| Módulo | Peso | Evidencia | Estado |
+|---|:-:|---|:-:|
+| **M1** · Código heredado, arquitectura y entorno | 25 % | MVC, uv, pruebas AAA, Docker CPU, CI + Ruff + Gitflow, PDF | ✅ |
+| **M2** · Propuesta | 35 % | [`docs/M2_propuesta.md`](docs/M2_propuesta.md): Data Thinking, BMC, OKR/KPI, riesgos, Kanban | ✅ |
+| **M3** · Construcción local | 25 % | Frontend desacoplado + FastAPI, MLflow :5050 con Registry, SDD en [`specs/`](specs/), PR en GitHub | ✅ |
+| **M4** · Producción | 15 % | [`.gitlab-ci.yml`](.gitlab-ci.yml), [`docs/M4_despliegue.md`](docs/M4_despliegue.md), [`docs/postmortem.md`](docs/postmortem.md) | 🔜 |
 
-Documentos de soporte: [Model Card](docs/model_card.md) · [Dataset](docs/dataset.md) · [ADR](docs/adr/) ·
-[Especificaciones](specs/) · [Declaración de uso de IA](docs/declaracion_uso_ia.md).
+**Documentos de soporte:** [Model Card](docs/model_card.md) · [Dataset](docs/dataset.md) · [ADR](docs/adr/) ·
+[Especificaciones](specs/) · [Arquitectura](docs/arquitectura/) · [Declaración de uso de IA](docs/declaracion_uso_ia.md)
 
-## 10. Smoke test mínimo (sección 5 del README del curso)
-1. Cargar el modelo → `make model` + `tests/test_real_model.py::test_model_architecture`.
-2. Inferir con una muestra de `artifacts/samples/` → `make smoke`.
-3. Validar el JSON contra `artifacts/expected/response_example.json` → `smoke_infer.py` y `test_response_shape_matches_expected_example`.
-4. Confirmar que el contenedor responde en `POST /predict` → `make docker-up && make docker-smoke`.
+<details>
+<summary><b>Estado de artifacts</b></summary>
 
-## 11. Resultados de referencia
-`make evaluate` sobre las 16 imágenes del aula: exactitud 0.94, sensibilidad 1.00, especificidad 0.83, AUC 0.98.
-**No mide generalización** (posible solapamiento con el entrenamiento). La evaluación honesta es RSNA, con métricas
-por subgrupo en MLflow (ver Model Card). Hallazgo de Grad-CAM: en un DICOM pediátrico AP el modelo atiende al marcador de
-lateralidad y a los bordes (posible aprendizaje por atajos).
+| Artifact | Estado | Ubicación / cómo obtenerlo |
+|---|:-:|---|
+| Modelo | ✅ | `artifacts/model/conv_MLP_84.h5` (118 MB, ignorado por Git) · `make model` verifica SHA-256 |
+| Dataset aula | ✅ | `data/JPG.zip`, `data/DICOM.zip` · `make data-course` → catálogo con metadatos |
+| Dataset RSNA | ✅ | `make dataset-rsna` (Kaggle) → `data/processed/rsna_metadata.csv` |
+| Muestras de entrada | ✅ | `artifacts/samples/` — 3 JPG + 2 DICOM (smoke, no miden calidad) |
+| Contrato de salida | ✅ | `api/openapi.yaml`, `api/README.md`, `artifacts/expected/response_example.json` |
+| Docker CPU | ✅ | `docker/Dockerfile` (multi-etapa, no root, healthcheck) + `docker-compose.yml` |
+| Smoke test | ✅ | `smoke_infer.py`, `tests/`, `scripts/container_smoke.py` |
+| API | ✅ | FastAPI `:8000` (`/health`, `/predict`, `/docs`) + gRPC `:50051` |
+| Frontend | ✅ | HTML/JS desacoplado `:5173` (Streamlit `:8501` queda como app interna) |
+| MLflow | ✅ | `make mlflow` · `make mlflow-runs` (Model Registry en `:5050`) |
+</details>
 
-## Evaluación de los modelos (radiografía y tomografía)
-El sistema tiene dos partes, cada una con su propio modelo **preentrenado** (ninguno se entrenó en este proyecto).
-Cada uno se evaluó por separado contra lo que marcaron radiólogos, con datos que el modelo no había visto. No se
-combinan: en estos datasets ningún paciente tiene radiografía y tomografía a la vez.
+<details>
+<summary><b>Smoke test mínimo del curso</b></summary>
 
-| | Radiografía (proyecto principal, `make ui`) | Tomografía (prototipo, `make ui-ct`) |
-|---|---|---|
-| **Qué se evalúa** | El modelo `conv_MLP_84` | El modelo MEDPSeg |
-| **Con qué datos** | RSNA: radiografías de adultos | COVID-19-CT-Seg: tomografías con COVID |
-| **Pregunta** | ¿Acierta si hay neumonía? ¿Mira donde está la lesión? | ¿Dibuja la lesión donde la marcaron los radiólogos? |
-| **Contra qué se compara** | Etiqueta de los radiólogos (opacidad sí/no) y sus cajas | Máscara de la lesión hecha por los radiólogos |
-| **Medida** | Sensibilidad, especificidad, AUC; *pointing game* | Dice (coincidencia de la lesión) |
-| **Resultado** | AUC 0,73 (500 casos); Grad-CAM acierta 2,7 % (300 casos); sesgo AP/PA | Dice 0,78 (1 caso) |
-| **Detalle** | `docs/model_card.md`, ADR-0009 | ADR-0010, `specs/008-prototipo-tomografia.md` |
+| Paso | Verificación | Evidencia |
+|:-:|---|---|
+| 1 | Cargar el modelo | `make model` + `tests/test_real_model.py` |
+| 2 | Inferir con una muestra | `make smoke` |
+| 3 | Validar el JSON contra el ejemplo | `smoke_infer.py` + `artifacts/expected/response_example.json` |
+| 4 | El contenedor responde en `POST /predict` | `make docker-up && make docker-smoke` |
+</details>
 
-La evaluación de radiografía es la sólida (cientos de casos, con intervalos de confianza). La de tomografía es una
-primera validación con 1 de las 20 tomografías del dataset.
+---
 
-Fuentes: RSNA Pneumonia Detection Challenge (Shih et al., 2019, *Radiology: AI*); COVID-19-CT-Seg (Ma et al., 2020,
-Zenodo 3757476, CC BY 4.0); MEDPSeg (Carmo et al., 2026, licencia MIT).
+## 📚 Créditos y fuentes
 
-## Modelos preentrenados y cómo se integran
-En este proyecto no se entrenó ningún modelo: se usan tres modelos preentrenados y se miden con datos que no vieron.
+La versión actual (arquitectura MVC, API REST y gRPC, frontend desacoplado, pruebas, MLflow, Docker, CI/CD y
+documentación) se desarrolló en el marco del curso, con asistencia de Claude Code
+(ver [`docs/declaracion_uso_ia.md`](docs/declaracion_uso_ia.md)).
 
-| Modelo | Quién lo entrenó | Con qué datos | Qué hace aquí |
-|---|---|---|---|
-| `conv_MLP_84` (Keras) | Autores del proyecto original (Torres Revelo y Díaz Salazar), con la arquitectura de Pasa et al. | Radiografías de niños (Kermany) | Clasifica la radiografía: neumonía sí/no, bacteriana/viral |
-| PSPNet (TorchXRayVision) | Cohen et al. | Radiografías anotadas (ChestX-Det) | Dibuja la silueta de los pulmones en la radiografía (opcional) |
-| MEDPSeg (PyTorch) | Carmo et al. | Tomografías anotadas | Dibuja pulmones, lóbulos, vías y lesión en la tomografía |
+| Componente reutilizado | Referencia |
+|---|---|
+| Modelo `conv_MLP_84.h5` | Caso base del curso (Torres Revelo y Díaz Salazar) · uso académico |
+| Código heredado | [`dalquinones/UAO-Neumonia`](https://github.com/dalquinones/UAO-Neumonia) (monolito refactorizado aquí) |
+| Arquitectura de la red | Pasa et al. (2019), *Scientific Reports* 9:6268 |
+| Dataset RSNA | Shih et al. (2019), *Radiology: AI* 1(1):e180041 |
+| Imágenes de muestra | Kermany et al. (2018), Mendeley Data, CC BY 4.0 |
+| Tomografía | MEDPSeg, Carmo et al. (2026), licencia MIT · COVID-19-CT-Seg, Ma et al. (2020), Zenodo 3757476 |
+| Segmentación pulmonar | TorchXRayVision, Cohen et al. (2022) · PSPNet con ChestX-Det (Lian et al., 2021) |
 
-### Ficha técnica y papel de cada modelo en el proceso
-Ningún modelo hace solo todo el proceso. En la **radiografía**, `conv_MLP_84` detecta la infección y PSPNet ubica los
-pulmones; su 3D es una **representación** de dónde miró el modelo, porque una radiografía es plana. En la
-**tomografía**, MEDPSeg segmenta la lesión y el 3D sí es la **anatomía real** del paciente. La DenseNet-121 es una
-alternativa a `conv_MLP_84` en evaluación (ADR-0011).
-
-| | `conv_MLP_84` (modelo base) | DenseNet-121 RSNA | PSPNet | MEDPSeg |
-|---|---|---|---|---|
-| **Autores** | Torres Revelo y Díaz Salazar (arquitectura de Pasa et al.) | Cohen et al. (TorchXRayVision) | Cohen et al. (TorchXRayVision) | Carmo et al. |
-| **Origen** | Release `modelo-v1` del caso base | Pesos `densenet121-res224-rsna` | `chestx_det` PSPNet | `data_poly.zip` v4.0.0 |
-| **Framework** | Keras/TensorFlow | PyTorch | PyTorch | PyTorch |
-| **Datos de entrenamiento** | Radiografías pediátricas (Kermany) | Radiografías de adultos (RSNA, imágenes del NIH) | ChestX-Det | Tomografías anotadas |
-| **Tipo de imagen** | Radiografía | Radiografía | Radiografía | Tomografía |
-| **Entrada** | 512×512, gris, CLAHE, 0–1 | 224×224, gris, [-1024, 1024] | 512×512 | Tomografía remuestreada a 1,5 mm |
-| **Salida** | 3 probabilidades: bacteriana, normal, viral | Neumonía sí/no | 14 estructuras anatómicas | Pulmones, lóbulos, vía aérea, arterias, lesión |
-| **Paso del proceso** | 1. Detectar la infección | 1. Detectar la infección (alternativa) | 2. Ubicar los pulmones | 1 a 3: segmentar, medir y reconstruir |
-| **Determinación de la infección** | NEUMONÍA / NORMAL (umbral 0,5) y patrón bacteriano/viral **sugestivo, no validado** | Neumonía sí/no, sin patrón | No la determina: delimita los pulmones | Lesión segmentada (vidrio esmerilado y consolidación), % por pulmón y lóbulo, severidad 0–25 |
-| **Localización** | Grad-CAM 31×31: dónde miró el modelo, **no** dónde está la lesión | Grad-CAM 7×7 (sin medir aún) | 6 zonas con la silueta real → lateralidad, extensión y alerta de atajo | La lesión vóxel a vóxel, en su pulmón y su lóbulo |
-| **Vista 3D** | Relieve 3D de la atención y esquema de pulmones por zonas (**representación**) | La misma vista, con su Grad-CAM | Hace que el esquema por zonas siga la silueta real | **Reconstrucción 3D real** de pulmones, vía aérea, arterias y lesión |
-| **Validación** | AUC 0,73 en 500 radiografías de RSNA; sesgo AP/PA; Grad-CAM acierta el 2,7 % | Pendiente: `make evaluate-test` (3000 radiografías no vistas) | Control de calidad automático; aprobado en 4 de 5 muestras | Dice 0,78 frente a radiólogos (1 de 20 tomografías de COVID-19-CT-Seg) |
-| **Cómo se activa** | `make ui` (puerto 8501), siempre | `make ui-xrv` (rama `feature/clasificador-xrv`) | `make ui-seg` (opcional) | `make ui-ct` (puerto 8502, prototipo) |
-| **Tamaño** | ≈ 118 MB | 28 MB | 273 MB | 768 MB |
-| **SHA-256** | `d9548ff6…e18e` | `906a59f4…0268` | `019b167e…` | `b0890cd4…d659` |
-| **Licencia** | Uso académico | Apache-2.0 | Apache-2.0 (código) | MIT (código) |
-
-**El proceso completo, por tipo de imagen:**
-1. **Radiografía:** `conv_MLP_84` (o la DenseNet-121) detecta la infección → Grad-CAM marca dónde miró → PSPNet (o las
-   zonas geométricas) ubica los pulmones → el sistema cruza ambas cosas → informe por zonas, alerta de atajo y vista 3D
-   de la atención.
-2. **Tomografía:** MEDPSeg segmenta pulmones, lóbulos, vía aérea, arterias y lesión → el sistema mide el % comprometido
-   y la severidad → reconstrucción 3D real con la lesión.
-3. **Unión de los dos** en un informe por paciente: paso siguiente, aún no implementado.
-
-### Flujo del sistema
-```mermaid
-flowchart TD
-    subgraph RX["Radiografía · make ui / make ui-seg · puerto 8501"]
-        A["Radiografía<br/>DICOM, JPG o PNG"] --> B["Lectura y anonimización<br/>sin PatientID ni PatientName"]
-        B --> C["Preprocesamiento<br/>512×512 · gris · CLAHE · 0–1"]
-        C --> D["conv_MLP_84 · Keras<br/>3 probabilidades"]
-        D --> E["Política de decisión<br/>umbral 0,5 → NEUMONÍA / NORMAL + subtipo"]
-        D --> F["Grad-CAM<br/>mapa de atención 31×31"]
-        B --> G{"¿Segmentación pulmonar<br/>activada? (make ui-seg)"}
-        G -- sí --> H["PSPNet · TorchXRayVision<br/>silueta real de los pulmones"]
-        H --> Q{"¿Pasa el control<br/>de calidad?"}
-        Q -- sí --> Z["Zonas con la silueta real"]
-        Q -- no --> ZG["Zonas geométricas<br/>+ nota en el informe"]
-        G -- no --> ZG
-        F --> X["Cruce atención × zonas<br/>lateralidad · extensión · alerta de atajo"]
-        Z --> X
-        ZG --> X
-        E --> R["Informe detallado<br/>app · PDF · API"]
-        X --> R
-    end
-    subgraph CT["Tomografía · make ui-ct · puerto 8502 · prototipo"]
-        T["Tomografía<br/>NIfTI"] --> M["MEDPSeg · PyTorch<br/>pulmones · lóbulos · vía aérea · arterias · lesión"]
-        M --> K["Cuantificación<br/>% por pulmón y lóbulo · severidad 0–25"]
-        K --> RC["Informe de tomografía<br/>+ vista 3D"]
-    end
-    R -. "paso siguiente" .-> I["Informe único por paciente<br/>(aún no implementado)"]
-    RC -. "paso siguiente" .-> I
-    classDef modelo fill:#fde2e1,stroke:#c0392b,color:#222
-    classDef nuestro fill:#e7f1fb,stroke:#2e6da4,color:#222
-    classDef futuro fill:#f0efec,stroke:#999,color:#555,stroke-dasharray:4 3
-    class D,H,M modelo
-    class E,F,X,ZG,Z,K,R,RC,B,C nuestro
-    class I futuro
-```
-Rojo: modelos preentrenados · azul: código del proyecto · gris punteado: paso siguiente, aún no implementado.
-
-### ¿Cómo se integran hoy en el resultado?
-**Sí se integran los dos de radiografía.** Cuando se activa la segmentación pulmonar (`make ui-seg`), el resultado
-combina dos modelos sobre la misma imagen:
-
-1. `conv_MLP_84` clasifica y Grad-CAM saca su mapa de atención.
-2. PSPNet dibuja dónde están realmente los pulmones.
-3. El código del proyecto cruza las dos cosas: cuánta atención cayó dentro y fuera de cada pulmón, en qué zona, y si
-   hay que lanzar la alerta de atajo.
-
-Ese "informe detallado" no lo produce ningún modelo solo; sale de combinarlos. Si PSPNet falla su control de calidad,
-el sistema vuelve a las zonas geométricas y lo dice en el informe.
-
-**La tomografía todavía no se integra.** Hoy son dos apps separadas, con dos informes separados: radiografía en el
-puerto 8501 y tomografía en el 8502. No comparten paciente ni informe.
-
-**Cómo se integraría** (paso siguiente, no implementado). Los modelos no se tocan: se unen sus **resultados** por
-paciente, con reglas del controlador. Un informe integrado diría algo así (ejemplo ilustrativo):
-
-> **Paciente 1144123456**
-> - **Radiografía:** sugiere neumonía viral (0,97). Alerta de atajo: el modelo miró fuera de los pulmones; interpretar con cautela.
-> - **Tomografía:** lesión de 871 mL, 15,7 % del pulmón (derecho 15,1 %, izquierdo 16,3 %), severidad 10/25.
-> - **Lectura conjunta:** la tomografía confirma compromiso bilateral y mide su extensión.
-
-La radiografía sirve para **detectar** y la tomografía para **medir**. Los modelos siguen evaluándose por separado
-(tabla anterior) y su salida se junta en un solo informe.
-
-**Limitación:** los casos disponibles son de pacientes distintos (radiografías de RSNA y del curso; tomografía de
-COVID-19-CT-Seg), así que un informe integrado hoy sería ilustrativo. Validarlo exige un dataset con radiografía y
-tomografía del mismo paciente.
-
-## Autoría y créditos
-**Esta versión** —arquitectura MVC, API REST y gRPC, interfaz clínica en Streamlit, pruebas, MLflow, Docker,
-CI/CD y documentación— fue desarrollada por el equipo del proyecto en el curso Gestión de Proyectos en IA y
-Ciencia de Datos, con asistencia de Claude Code (ver `docs/declaracion_uso_ia.md`).
-
-**Componentes de terceros que esta versión reutiliza** (su cita es obligatoria):
-- Modelo preentrenado `conv_MLP_84.h5`: caso base del curso, del proyecto original de I. Torres Revelo y N. Díaz Salazar. Uso académico.
-- Arquitectura de la red: Pasa et al. (2019), *Scientific Reports* 9:6268.
-- Dataset RSNA Pneumonia Detection Challenge: Shih et al. (2019), *Radiology: AI*; Radiological Society of North America.
-- Imágenes de muestra: Kermany et al. (2018), Mendeley Data, CC BY 4.0.
+<div align="center">
+<sub>🫁 Herramienta académica · no es un dispositivo médico · 2026-2S</sub>
+</div>
