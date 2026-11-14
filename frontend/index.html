@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Apoyo al diagnóstico de neumonía</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫁</text></svg>" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="config.js"></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <h2>Paciente</h2>
+      <form id="form" novalidate>
+        <label for="patient">Documento del paciente</label>
+        <input id="patient" name="patient" inputmode="numeric" maxlength="15" autocomplete="off" />
+        <p id="patient-error" class="field-error" hidden></p>
+
+        <label for="file">Radiografía</label>
+        <div id="drop" class="drop">
+          <input id="file" name="file" type="file" accept=".dcm,.jpg,.jpeg,.png" />
+          <span id="file-name">Arrastra un archivo o haz clic (DICOM, JPG o PNG)</span>
+        </div>
+
+        <button id="submit" type="submit" disabled>Predecir</button>
+      </form>
+
+      <section id="patient-panel" hidden>
+        <h3>Datos del paciente</h3>
+        <dl id="patient-rows"></dl>
+      </section>
+
+      <footer class="api-status">
+        <span id="api-dot" class="dot"></span>
+        <span id="api-text">Conectando con la API…</span>
+      </footer>
+    </aside>
+
+    <main>
+      <header>
+        <h1>🫁 Apoyo al diagnóstico de neumonía</h1>
+        <p class="subtitle">
+          Radiografía de tórax (DICOM, JPG o PNG) · Frontend desacoplado que consume la API REST
+          (<code>POST /predict</code>) · Explicabilidad Grad-CAM
+        </p>
+        <p class="disclaimer">
+          ⚠️ Herramienta académica de apoyo. No reemplaza el criterio de un profesional de la salud
+          ni constituye un dispositivo médico certificado.
+        </p>
+      </header>
+
+      <section id="state-idle" class="state" data-state="idle">
+        <p>Ingresa el documento, sube una radiografía y pulsa <strong>Predecir</strong>.</p>
+      </section>
+
+      <section id="state-loading" class="state" data-state="loading" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Analizando la radiografía… <span id="elapsed">0.0</span> s</p>
+      </section>
+
+      <section id="state-error" class="state error" data-state="error" role="alert" hidden>
+        <h3>No se pudo completar la predicción</h3>
+        <p id="error-text"></p>
+        <button id="retry" type="button">Reintentar</button>
+      </section>
+
+      <section id="state-success" class="state" data-state="success" hidden>
+        <div class="grid">
+          <figure id="preview-figure">
+            <figcaption>Radiografía</figcaption>
+            <img id="preview" alt="Radiografía cargada" />
+          </figure>
+          <figure>
+            <figcaption>Grad-CAM</figcaption>
+            <img id="gradcam" alt="Mapa de calor Grad-CAM devuelto por la API" />
+            <p id="preview-note" class="note" hidden>
+              DICOM: el navegador no lo muestra directamente; el mapa se dibuja sobre la radiografía
+              que procesó la API.
+            </p>
+          </figure>
+          <div class="result">
+            <h2 id="label"></h2>
+            <p class="muted">Confianza</p>
+            <p id="probability" class="big"></p>
+            <div class="bar"><div id="bar-fill"></div></div>
+            <p><strong>Subtipo sugerido:</strong> <span id="subtype"></span></p>
+            <table>
+              <thead>
+                <tr><th>Clase</th><th>Probabilidad</th></tr>
+              </thead>
+              <tbody id="classes"></tbody>
+            </table>
+          </div>
+        </div>
+        <p id="trace" class="trace"></p>
+      </section>
+    </main>
+  </body>
+</html>

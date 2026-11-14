@@ -13,3 +13,4 @@ convierte cada criterio en una prueba antes de escribir código. Estado: ✅ imp
 | [006 Segmentación pulmonar](006-segmentacion-pulmonar.md) | HU-09 | ✅ (rama `feature/segmentacion-pulmonar`) |
 | [007 Grad-CAM vs. cajas RSNA](007-localizacion-rsna.md) | HU-10 | 🟡 (código listo; falta la corrida con RSNA) |
 | [008 Prototipo de tomografía 3D](008-prototipo-tomografia.md) | HU-11 | 🧪 prototipo (rama `feature/prototipo-tomografia`) |
+| [012 Frontend desacoplado](012-frontend-desacoplado/spec.md) (spec + plan + tasks) | HU-13 | ✅ |

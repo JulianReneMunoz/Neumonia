@@ -10,7 +10,7 @@ WSL_PROJECT   ?= /mnt/c/Neumonia
 .PHONY: help install model data-course dataset-rsna dataset-kermany run api ui grpc proto \
         smoke test test-fast cov lint format check evaluate mlflow docker-build docker-up \
         docker-down docker-smoke hooks grafo memoria memoria-exportar memoria-buscar diagramas clean \
-        seg ui-seg evaluate-loc ct-setup ct-precompute ui-ct
+        seg ui-seg evaluate-loc ct-setup ct-precompute ui-ct backend frontend
 
 help:  ## Lista los comandos
 	@uv run python -c "import re,sys; [print(f'  make {m[0]:<16} {m[1]}') for m in re.findall(r'^([a-z-]+):.*?## (.*)$$', open('Makefile', encoding='utf-8').read(), re.M)]"
@@ -34,6 +34,11 @@ run: ui  ## Alias de ui
 
 api: model  ## API REST en http://localhost:8000/docs
 	uv run neumonia-api
+
+backend: api  ## (M3) Backend FastAPI: igual que make api, en http://localhost:8000/docs
+
+frontend:  ## (M3) Frontend desacoplado HTML/JS en http://localhost:5173 (consume la API; spec 012)
+	uv run python -m http.server 5173 --bind 127.0.0.1 --directory frontend
 
 ui: model  ## App única en http://localhost:8501: páginas Radiografía y Tomografía 3D (ADR-0012)
 	uv run --extra ct streamlit run src/neumonia/view/app.py
