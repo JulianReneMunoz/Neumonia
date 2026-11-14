@@ -7,6 +7,9 @@ Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) · [SemVer](
   «Tomografía 3D (prototipo)» (`view/app.py`, `st.navigation`) — ADR-0012, spec 010. Las vistas no cambian;
   `make ui-ct` queda como respaldo en el puerto 8502. Paciente e informe compartidos: nivel 2, pendiente.
 ### Agregado
+- MLflow del M3: `make mlflow` (servidor + Model Registry en :5050) y `make mlflow-runs` (3 corridas
+  comparables: umbral 0.5, umbral 0.3 y sin CLAHE, con calidad, latencia p95 y throughput) y registro
+  `neumonia-conv-mlp-84` con alias `produccion`. SPEC-013.
 - Frontend desacoplado HTML/JS (`frontend/`, `make frontend` en :5173) que consume la API por HTTP: estados
   idle/loading/success/error, Grad-CAM, confianza y datos del paciente. La API agrega CORS
   (`NEUMONIA_CORS_ORIGINS`) y carga el modelo al arrancar (lifespan). `make backend`. ADR-0013, SPEC-012.

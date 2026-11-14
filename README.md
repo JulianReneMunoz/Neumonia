@@ -75,6 +75,7 @@ macOS / Linux: los mismos comandos (`brew install uv make` o `curl -LsSf https:/
 | `make install` | Entorno idéntico a `uv.lock` |
 | `make model` | Descarga y verifica el modelo |
 | `make data-course` / `make dataset-rsna` / `make dataset-kermany` | Datos + catálogo de metadatos |
+| `make mlflow` + `make mlflow-runs` | **MLflow del M3**: servidor y Model Registry en http://127.0.0.1:5050 y 3 corridas comparables (umbral 0.5, umbral 0.3, sin CLAHE) con calidad y latencia (SPEC-013) |
 | `make backend` + `make frontend` | **Demo del M3**: API FastAPI (:8000) + frontend desacoplado HTML/JS (:5173) que la consume por HTTP (ADR-0013, SPEC-012) |
 | `make ui` · `make api` · `make grpc` | App Streamlit interna, API REST, servidor gRPC |
 | `make smoke` | Smoke test del curso (carga → infiere → valida contrato) |
