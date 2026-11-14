@@ -25,6 +25,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from neumonia import __version__
+from neumonia.api.ct_routes import build_ct_router
 from neumonia.api.schemas import ErrorResponse, HealthResponse, PredictionResponse
 from neumonia.config import Settings, get_settings
 from neumonia.controller.report import png_bytes
@@ -89,6 +90,7 @@ def create_app(
         expose_headers=["X-Process-Time-ms"],
     )
     app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
+    app.include_router(build_ct_router(settings))
 
     @app.middleware("http")
     async def timing(request: Request, call_next):

@@ -104,3 +104,32 @@ def test_frontend_is_a_separate_client_of_the_api():
         assert f'data-state="{state}"' in html
     assert "streamlit" not in (html + js).lower()
     assert "innerHTML" not in js  # los metadatos se pintan con textContent
+
+
+def test_frontend_has_report_and_3d_tabs():
+    # Arrange
+    html = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    js = (FRONTEND / "app.js").read_text(encoding="utf-8")
+    # Assert: informe y vista 3D salen de `findings` de la API, sin librerías externas
+    for tab in ("res", "inf", "3d"):
+        assert f'data-tab="{tab}"' in html
+        assert f'data-panel="{tab}"' in html
+    assert '<canvas id="v3d"' in html
+    assert "findings.attention_grid" in js
+    assert "shortcut_warning" in js
+    assert '<script src="http' not in html  # sin CDN: funciona sin internet
+
+
+def test_frontend_3d_tab_shows_the_ct_reconstruction():
+    # Arrange
+    html = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    js = (FRONTEND / "app.js").read_text(encoding="utf-8")
+    # Assert: SPEC-018, pulmones y lesión desde la API; Plotly.js servido por la propia API
+    assert 'id="ct-plot"' in html
+    assert 'data-v3d="ct"' in html
+    assert 'data-v3d="att"' in html
+    assert "/ct/cases" in js
+    assert "/vendor/plotly.min.js" in js
+    for name in ("pulmon_derecho", "vidrio_esmerilado", "consolidacion", "via_aerea", "vasos"):
+        assert name in js
+    assert "cdn.plot.ly" not in js
