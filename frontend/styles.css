@@ -116,3 +116,34 @@ th { color: var(--muted); font-weight: 400; }
   main { padding: 24px; }
   .grid { grid-template-columns: 1fr; }
 }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab { width: auto; margin: 0; background: none; color: var(--muted); border-radius: 0; padding: 8px 14px;
+  border-bottom: 2px solid transparent; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:disabled { background: none; }
+.warning { background: #fdf6e3; color: #8a6d0b; border-radius: 8px; padding: 12px 16px; margin: 14px 0; }
+.inf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+.inf-grid dl dt { margin-top: 12px; }
+#inf-summary li { margin-bottom: 6px; }
+#v3d { width: 100%; max-width: 760px; background: #0f1724; border-radius: 8px; cursor: grab; }
+#v3d:active { cursor: grabbing; }
+.legend { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+.ramp { width: 200px; height: 10px; border-radius: 5px;
+  background: linear-gradient(90deg, #00007f, #0000ff, #00ffff, #ffff00, #ff0000, #7f0000); }
+@media (max-width: 900px) { .inf-grid { grid-template-columns: 1fr; } }
+.dominant td { font-weight: 600; color: var(--accent); }
+
+/* SPEC-018: tomografía 3D */
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+.seg-btn { width: auto; margin: 0; border-radius: 0; background: none; color: var(--muted); padding: 7px 14px; font-weight: 600; }
+.seg-btn.active { background: var(--accent); color: #fff; }
+.seg-btn:hover:not(.active) { background: rgba(127, 127, 127, 0.12); }
+.ct-controls { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+.ct-controls select { width: auto; padding: 6px 10px; }
+#ct-plot[hidden] { display: none; }
+#ct-plot { width: 100%; min-height: 560px; border-radius: 10px; overflow: hidden; background: #11151c; }
+.ct-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0 6px; }
+.ct-metrics div { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+.ct-metrics dt { font-size: 0.78rem; color: var(--muted); }
+.ct-metrics dd { margin: 2px 0 0; font-size: 1.25rem; font-weight: 700; }

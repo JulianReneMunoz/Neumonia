@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Apoyo al diagnóstico de neumonía</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫁</text></svg>" />
-    <link rel="stylesheet" href="styles.css" />
-    <script src="config.js"></script>
-    <script src="app.js" defer></script>
+    <link rel="stylesheet" href="styles.css?v=19" />
+    <script src="config.js?v=19"></script>
+    <script src="app.js?v=19" defer></script>
   </head>
   <body>
     <aside class="sidebar">
@@ -66,6 +66,12 @@
       </section>
 
       <section id="state-success" class="state" data-state="success" hidden>
+        <nav class="tabs" role="tablist">
+          <button type="button" class="tab active" data-tab="res" role="tab">🩻 Resultado</button>
+          <button type="button" class="tab" data-tab="inf" role="tab">📋 Informe detallado</button>
+          <button type="button" class="tab" data-tab="3d" role="tab">🧊 Vista 3D</button>
+        </nav>
+        <div class="panel" data-panel="res">
         <div class="grid">
           <figure id="preview-figure">
             <figcaption>Radiografía</figcaption>
@@ -93,6 +99,69 @@
             </table>
           </div>
         </div>
+        </div>
+
+        <div class="panel" data-panel="inf" hidden>
+          <p id="inf-empty" class="note" hidden>El informe requiere el mapa Grad-CAM, que no llegó en la respuesta.</p>
+          <div id="inf-body">
+            <h3>Informe de hallazgos asistido</h3>
+            <p class="muted">Describe dónde miró el modelo; no es una segmentación de lesiones.</p>
+            <ul id="inf-summary"></ul>
+            <div id="inf-warning" class="warning" hidden>
+              ⚠️ Posible atajo del modelo: atiende tanto o más fuera de los pulmones que dentro.
+            </div>
+            <div class="inf-grid">
+              <table>
+                <thead><tr><th>Zona pulmonar</th><th>Atención media</th><th></th></tr></thead>
+                <tbody id="inf-zones"></tbody>
+              </table>
+              <dl id="inf-facts"></dl>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" data-panel="3d" hidden>
+          <div class="seg" role="group" aria-label="Tipo de vista 3D">
+            <button type="button" class="seg-btn active" data-v3d="ct">Tomografía 3D: pulmones y lesión</button>
+            <button type="button" class="seg-btn" data-v3d="att">Atención del modelo (radiografía)</button>
+          </div>
+
+          <div id="ct-view">
+            <p class="muted">
+              Reconstrucción 3D de una tomografía de tórax ya segmentada con MEDPSeg: pulmones, vía aérea,
+              arterias pulmonares y áreas afectadas (vidrio esmerilado y consolidación). Es un caso de
+              demostración precalculado: no corresponde a la radiografía cargada. Arrastre para girar,
+              rueda para acercar y clic en la leyenda para ocultar estructuras.
+            </p>
+            <div class="ct-controls">
+              <label for="ct-case">Caso</label>
+              <select id="ct-case"></select>
+            </div>
+            <p id="ct-status" class="note" hidden></p>
+            <div id="ct-plot" hidden aria-label="Reconstrucción 3D de la tomografía"></div>
+            <div id="ct-report" hidden>
+              <dl id="ct-metrics" class="ct-metrics"></dl>
+              <ul id="ct-summary"></ul>
+              <table>
+                <thead><tr><th>Lóbulo</th><th>Volumen</th><th>Comprometido</th><th>Puntaje (0–5)</th></tr></thead>
+                <tbody id="ct-lobes"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="att-view" hidden>
+            <p id="v3d-empty" class="note" hidden>La vista de atención requiere el mapa Grad-CAM, que no llegó en la respuesta.</p>
+            <div id="v3d-body">
+              <p class="muted">
+                Una radiografía es una imagen 2D: esta vista no reconstruye el pulmón. Muestra en relieve
+                dónde se fijó el modelo (rejilla Grad-CAM). Arrastre para girar; doble clic para volver.
+              </p>
+              <canvas id="v3d" width="760" height="520" aria-label="Superficie 3D de la atención del modelo"></canvas>
+              <div class="legend"><span>Baja atención</span><span class="ramp"></span><span>Alta atención</span></div>
+            </div>
+          </div>
+        </div>
+
         <p id="trace" class="trace"></p>
       </section>
     </main>
