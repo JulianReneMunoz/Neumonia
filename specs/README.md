@@ -15,3 +15,4 @@ convierte cada criterio en una prueba antes de escribir código. Estado: ✅ imp
 | [008 Prototipo de tomografía 3D](008-prototipo-tomografia.md) | HU-11 | 🧪 prototipo (rama `feature/prototipo-tomografia`) |
 | [012 Frontend desacoplado](012-frontend-desacoplado/spec.md) (spec + plan + tasks) | HU-13 | ✅ |
 | [013 MLflow: 3 runs y Model Registry](013-mlflow-runs-registry/spec.md) (spec + plan + tasks) | HU-14 | ✅ |
+| [019 Tablero Kanban en GitHub Projects](019-kanban-github-projects/spec.md) (spec + plan + tasks) | HU: #32 | ✅ |
