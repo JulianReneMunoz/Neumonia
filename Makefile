@@ -35,16 +35,16 @@ run: ui  ## Alias de ui
 api: model  ## API REST en http://localhost:8000/docs
 	uv run neumonia-api
 
-ui: model  ## Interfaz clínica Streamlit en http://localhost:8501
-	uv run streamlit run src/neumonia/view/streamlit_app.py
+ui: model  ## App única en http://localhost:8501: páginas Radiografía y Tomografía 3D (ADR-0012)
+	uv run --extra ct streamlit run src/neumonia/view/app.py
 
 seg:  ## Instala la segmentación pulmonar real (PyTorch + TorchXRayVision) y verifica PSPNet
 	uv sync --all-groups --extra ct --extra seg
 	uv run python scripts/fetch_lung_model.py
 
 ui-seg: export NEUMONIA_LUNG_SEGMENTER = pspnet
-ui-seg: model  ## UI con segmentación pulmonar real (requiere make seg una vez)
-	uv run streamlit run src/neumonia/view/streamlit_app.py
+ui-seg: model  ## App única con segmentación pulmonar real (requiere make seg una vez)
+	uv run --extra ct streamlit run src/neumonia/view/app.py
 
 ct-setup:  ## (Prototipo) Instala MEDPSeg en su propio entorno para tomografías (ADR-0010)
 	uv run --extra ct python scripts/setup_medpseg.py
@@ -52,7 +52,7 @@ ct-setup:  ## (Prototipo) Instala MEDPSeg en su propio entorno para tomografías
 ct-precompute:  ## (Prototipo) Segmenta una tomografía: make ct-precompute CT=ruta.nii.gz
 	uv run --extra ct python scripts/ct_precompute.py --ct "$(CT)"
 
-ui-ct:  ## (Prototipo) Tomografía en 3D: pulmones, vía aérea, arterias y lesión (puerto 8502)
+ui-ct:  ## (Respaldo) Solo la tomografía 3D, aparte, en el puerto 8502 (también es una página de make ui)
 	uv run --extra ct streamlit run src/neumonia/view/ct_app.py --server.port 8502
 
 grpc: model  ## Servidor gRPC en el puerto 50051
